@@ -20,7 +20,7 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwev72efGCnnUHT9PaJILdAZ8a3F0bibiitt0EcoCc9PmQS4QMOSudP65Y1WctBGTe9/exec";
+        const GAS_URL = "여기에_배포한_GAS_URL을_넣으세요";
 
         function App() {
             const [view, setView] = useState('loading');
@@ -29,7 +29,6 @@
             const [pending, setPending] = useState([]);
             const [base, setBase] = useState({ model: '', lensColor: '' });
             
-            // 평가 항목 5개로 세분화
             const [segments, setSegments] = useState([
                 { id: Date.now(), terrain: '눈밭', weather: '맑음', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }
             ]);
@@ -52,36 +51,19 @@
                 } catch (e) { setView('profile'); }
             };
 
-           const handleSave = async () => {
-    // 1. 데이터 취합 및 로컬 저장
-    const newEntries = segments.map(s => ({ ...user, ...base, ...s, timestamp: new Date().toISOString() }));
-    const updatedPending = [...pending, ...newEntries];
-    setPending(updatedPending);
-    localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
-    
-    // 2. 저장 완료 알림
-    alert("✅ 기록이 안전하게 저장되었습니다! (연결 시 자동 전송)");
-    sync(updatedPending);
+            const handleSave = async () => {
+                const newEntries = segments.map(s => ({ ...user, ...base, ...s, timestamp: new Date().toISOString() }));
+                const updatedPending = [...pending, ...newEntries];
+                setPending(updatedPending);
+                localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
+                
+                alert("✅ 기록이 안전하게 저장되었습니다! (통신 연결 시 자동 전송)");
+                sync(updatedPending);
 
-    // 3. ⭐️ 입력창 완벽 초기화 ⭐️
-    // 작성했던 모든 평가 항목과 코멘트를 싹 지우고 기본 상태 하나만 남깁니다.
-    setSegments([
-        { 
-            id: Date.now(), 
-            terrain: config.terrains[0], 
-            weather: config.weathers[0], 
-            colorMatch: 3, 
-            shadow: 3, 
-            contrast: 3, 
-            brightness: 3, 
-            comfort: 3, 
-            comment: '' 
-        }
-    ]);
-
-    // 4. 화면을 부드럽게 맨 위로 끌어올림
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-};
+                // 입력창 초기화 및 맨 위로 스크롤
+                setSegments([{ id: Date.now(), terrain: config.terrains[0], weather: config.weathers[0], colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }]);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
 
             const sync = async (toSync) => {
                 let current = [...toSync];
@@ -139,45 +121,60 @@
                 </div>
             );
 
-          if (view === 'guide') return (
-    <div className="p-8 text-slate-300 min-h-screen bg-[#020617] pb-32">
-        <h2 className="text-3xl font-black text-blue-500 mb-8 tracking-tighter italic">TECH & GUIDE</h2>
-        
-        <div className="mb-8 p-5 bg-blue-950/30 border border-blue-900/50 rounded-2xl">
-            <h3 className="text-blue-400 font-bold mb-3 text-sm">💡 시야 증강 기술이란?</h3>
-            <p className="text-[10px] leading-relaxed text-slate-400 mb-3">
-                일반 선글라스처럼 단순히 빛을 덮어 시야를 어둡게 만드는 것이 아닙니다. 빛 속의 빨강, 파랑, 노랑 빛을 눈으로 골고루 들어오게 제어하여, 눈부심은 막고 전체적인 시야는 환하고 또렷하게 만드는 이리지스의 독자 기술입니다.
-            </p>
-            <p className="text-[10px] leading-relaxed text-slate-400">
-                * 주의: 이 기술은 <span className="text-white font-bold">빨강, 파랑, 핑크 등 유색 렌즈</span>에서 진가를 발휘하며, 까만색/은색 렌즈에는 적용되지 않습니다.
-            </p>
-        </div>
+            if (view === 'intro') return (
+                <div className="p-10 text-white text-center min-h-screen flex flex-col justify-center bg-[#020617]">
+                    <h1 className="text-5xl font-black mb-2 tracking-tighter italic text-blue-500">IRISIS</h1>
+                    <h2 className="text-xl font-bold mb-10 tracking-[0.2em] text-slate-500 uppercase">Field Test 2026</h2>
+                    <p className="text-slate-400 text-sm mb-16 leading-relaxed font-medium px-2">
+                        빛의 3원색을 제어하는 시야 증강 기술을<br/>
+                        삿피크의 극한 환경에서 검증합니다.
+                    </p>
+                    <div className="space-y-4">
+                        <button onClick={() => setView('guide')} className="w-full bg-white text-black p-5 rounded-2xl font-black text-lg">기술 설명 및 가이드</button>
+                        <button onClick={() => setView('form')} className="w-full bg-slate-900 p-5 rounded-2xl font-black text-lg text-slate-400">테스트 시작</button>
+                    </div>
+                </div>
+            );
 
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-white font-black text-sm mb-1">01. 지형/색상 매칭도</h3>
-                <p className="text-[10px] leading-relaxed text-slate-500">현재 착용한 렌즈 컬러가 눈밭, 암릉 등 지금 걷고 있는 지형을 식별하는 데 가장 적합한지 평가합니다.</p>
-            </div>
-            <div>
-                <h3 className="text-white font-black text-sm mb-1">02. 음영 적응력 (Shadow)</h3>
-                <p className="text-[10px] leading-relaxed text-slate-500">강한 햇빛에서 빙하 그림자나 텐트 안으로 들어갈 때, 선글라스를 벗지 않아도 즉각적으로 시야 확보가 되는지 확인합니다.</p>
-            </div>
-            <div>
-                <h3 className="text-white font-black text-sm mb-1">03. 입체감 및 대비 (Contrast)</h3>
-                <p className="text-[10px] leading-relaxed text-slate-500">눈밭의 미세한 굴곡과 크레바스 경계가 평면적이지 않고 입체적이고 선명하게 분간되는지 체크합니다.</p>
-            </div>
-            <div>
-                <h3 className="text-white font-black text-sm mb-1">04. 시야 증강 체감 (Brightness)</h3>
-                <p className="text-[10px] leading-relaxed text-slate-500">고산의 강한 눈부심은 확실히 막아주면서도, 렌즈를 통해 보는 시야 전체가 맑고 환하게 유지되는지 확인합니다.</p>
-            </div>
-            <div>
-                <h3 className="text-white font-black text-sm mb-1">05. 눈 보호 및 착용감 (Comfort)</h3>
-                <p className="text-[10px] leading-relaxed text-slate-500">장시간 착용에도 눈 시림이나 피로도가 없는지, 그리고 김서림이나 헬멧 간섭 없이 편안한지 평가합니다.</p>
-            </div>
-        </div>
-        <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl">START TEST</button>
-    </div>
-);
+            if (view === 'guide') return (
+                <div className="p-8 text-slate-300 min-h-screen bg-[#020617] pb-32">
+                    <h2 className="text-3xl font-black text-blue-500 mb-8 tracking-tighter italic">TECH & GUIDE</h2>
+                    
+                    <div className="mb-8 p-5 bg-blue-950/30 border border-blue-900/50 rounded-2xl">
+                        <h3 className="text-blue-400 font-bold mb-3 text-sm">💡 VISION BOOSTER™ 란?</h3>
+                        <p className="text-[10px] leading-relaxed text-slate-400 mb-3">
+                            일반 렌즈처럼 빛을 덮어 시야를 어둡게 만드는 것이 아닙니다. 빛 속의 빨강, 파랑, 노랑을 제어하여 눈부심은 막고 윤곽은 뚜렷하게 살려주는 이리지스의 독자적인 시야식별력 증강 기술입니다.
+                        </p>
+                        <p className="text-[10px] leading-relaxed text-slate-400">
+                            * 주의: 이 기술은 <span className="text-white font-bold">빨강, 파랑, 핑크 등 유색 렌즈</span>에서 진가를 발휘하며, 까만색/은색 렌즈에는 적용되지 않습니다.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-white font-black text-sm mb-1">01. VISION BOOSTER™ (지형/색상 매칭)</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">선택한 유색 렌즈가 눈밭, 암릉 등 현재 걷고 있는 지형의 특성과 잘 맞아떨어져 시야를 극대화하는지 평가합니다.</p>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-sm mb-1">02. 음영 적응력 (Shadow)</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">강한 햇빛에서 빙하 그림자나 텐트 안으로 들어갈 때, 선글라스를 벗지 않아도 즉각적으로 시야 확보가 되는지 확인합니다.</p>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-sm mb-1">03. SEO™ (초고해상도 입체감)</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">초선명 렌즈를 통해 눈밭의 미세한 굴곡과 크레바스 경계가 평면적이지 않고 입체적으로 분간되는지 체크합니다.</p>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-sm mb-1">04. 시야 밝기 및 빛 번짐 제어</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">고산의 치명적인 눈부심과 난반사는 확실히 막아주면서도 전체적인 시야는 맑게 유지되는지 평가합니다.</p>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-sm mb-1">05. FORTIS™ & RESILEX™ (안전/착용감)</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">방탄 렌즈의 안도감, 100% 자외선 차단 성능, 그리고 형상기억테가 영하에서도 부러지거나 흘러내림 없이 편안한지 확인합니다.</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl">START TEST</button>
+                </div>
+            );
 
             return (
                 <div className="p-6 text-slate-200 pb-40 min-h-screen bg-[#020617] no-scrollbar overflow-y-auto">
@@ -242,15 +239,15 @@
                                 </div>
                             </div>
 
-                            <RatingSystem value={s.colorMatch} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, colorMatch: v} : i))} label="지형/색상 매칭도" desc="현재 착용한 렌즈 컬러가 지금의 지형을 보기에 적합한가?" />
+                            <RatingSystem value={s.colorMatch} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, colorMatch: v} : i))} label="VISION BOOSTER™ (매칭도)" desc="렌즈 컬러가 현재 지형을 식별하는 데 최적의 시야를 제공하는가?" />
                             <RatingSystem value={s.shadow} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, shadow: v} : i))} label="음영 적응력" desc="그늘이나 어두운 곳 진입 시 시야 확보가 즉각적인가?" />
-                            <RatingSystem value={s.contrast} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, contrast: v} : i))} label="입체감 및 대비" desc="바닥의 굴곡과 크레바스가 평면적이지 않고 뚜렷한가?" />
-                            <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="시야 증강 체감" desc="눈부심은 막아주면서 시야는 맑고 환하게 유지되는가?" />
-                            <RatingSystem value={s.comfort} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, comfort: v} : i))} label="눈 보호 및 착용감" desc="눈 피로도, 눈부심, 김서림, 눌림 없이 편안한가?" />
+                            <RatingSystem value={s.contrast} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, contrast: v} : i))} label="SEO™ (초고해상도 입체감)" desc="바닥의 굴곡과 크레바스가 평면적이지 않고 입체적이고 뚜렷한가?" />
+                            <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="시야 밝기 체감" desc="눈부심은 확실히 막아주면서 시야는 전체적으로 맑고 환하게 유지되는가?" />
+                            <RatingSystem value={s.comfort} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, comfort: v} : i))} label="FORTIS™ & RESILEX™ (착용감)" desc="눈 피로도나 렌즈 김서림, 테의 눌림이나 흘러내림 없이 편안한가?" />
 
                             <textarea 
-                                placeholder="타 브랜드(오클리/줄보 등) 대비 장단점 (선택)" 
-                                className="w-full bg-slate-950/50 p-5 rounded-2xl text-[11px] border border-slate-900 outline-none h-20 placeholder:text-slate-700 font-medium"
+                                placeholder="특이사항/의견(선택)" 
+                                className="w-full bg-slate-950/50 p-5 rounded-2xl text-[11px] border border-slate-900 outline-none h-20 placeholder:text-slate-700 font-medium mt-2"
                                 onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))}
                             />
                         </div>

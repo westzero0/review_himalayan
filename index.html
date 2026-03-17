@@ -52,14 +52,36 @@
                 } catch (e) { setView('profile'); }
             };
 
-            const handleSave = async () => {
-                const newEntries = segments.map(s => ({ ...user, ...base, ...s, timestamp: new Date().toISOString() }));
-                const updatedPending = [...pending, ...newEntries];
-                setPending(updatedPending);
-                localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
-                alert("기록이 로컬에 저장되었습니다. 연결 시 자동 전송됩니다.");
-                sync(updatedPending);
-            };
+           const handleSave = async () => {
+    // 1. 데이터 취합 및 로컬 저장
+    const newEntries = segments.map(s => ({ ...user, ...base, ...s, timestamp: new Date().toISOString() }));
+    const updatedPending = [...pending, ...newEntries];
+    setPending(updatedPending);
+    localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
+    
+    // 2. 저장 완료 알림
+    alert("✅ 기록이 안전하게 저장되었습니다! (연결 시 자동 전송)");
+    sync(updatedPending);
+
+    // 3. ⭐️ 입력창 완벽 초기화 ⭐️
+    // 작성했던 모든 평가 항목과 코멘트를 싹 지우고 기본 상태 하나만 남깁니다.
+    setSegments([
+        { 
+            id: Date.now(), 
+            terrain: config.terrains[0], 
+            weather: config.weathers[0], 
+            colorMatch: 3, 
+            shadow: 3, 
+            contrast: 3, 
+            brightness: 3, 
+            comfort: 3, 
+            comment: '' 
+        }
+    ]);
+
+    // 4. 화면을 부드럽게 맨 위로 끌어올림
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
             const sync = async (toSync) => {
                 let current = [...toSync];

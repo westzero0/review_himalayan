@@ -12,7 +12,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         body { background-color: #020617; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         .rating-bar { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .glass-card { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
 <body>
@@ -55,7 +55,7 @@
                 const updatedPending = [...pending, ...newEntries];
                 setPending(updatedPending);
                 localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
-                alert("기록이 로컬에 저장되었습니다. 통신 연결 시 자동 전송됩니다.");
+                alert("기록이 로컬에 저장되었습니다. 연결 시 자동 전송됩니다.");
                 sync(updatedPending);
             };
 
@@ -73,20 +73,19 @@
                 }
             };
 
-            // 평점 컴포넌트 (세련된 바 스타일)
             const RatingSystem = ({ value, onChange, label, desc }) => (
                 <div className="mb-8">
                     <div className="flex justify-between items-end mb-3 px-1">
                         <span className="text-xs font-bold text-slate-200">{label}</span>
                         <span className="text-[10px] text-blue-500 font-black">{value} / 5</span>
                     </div>
-                    <div className="flex gap-1.5 h-2">
+                    <div className="flex gap-1.5 h-2.5">
                         {[1, 2, 3, 4, 5].map(v => (
                             <div 
                                 key={v} 
                                 onClick={() => onChange(v)}
                                 className={`flex-1 rounded-full rating-bar cursor-pointer ${
-                                    value >= v ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-slate-800'
+                                    value >= v ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-slate-800'
                                 }`}
                             />
                         ))}
@@ -95,14 +94,14 @@
                 </div>
             );
 
-            if (view === 'loading') return <div className="text-white p-20 text-center animate-pulse tracking-tighter font-black">SYNCING DATA...</div>;
+            if (view === 'loading') return <div className="text-white p-20 text-center animate-pulse tracking-widest font-black">SYNCING...</div>;
 
             if (view === 'profile') return (
                 <div className="p-8 text-white min-h-screen flex flex-col justify-center bg-[#020617]">
                     <h1 className="text-4xl font-black text-blue-500 mb-2 tracking-tighter italic">REGISTRATION</h1>
-                    <p className="text-slate-500 mb-10 text-sm font-medium">대원님의 정보를 입력해주세요.</p>
-                    <input id="n" placeholder="이름" className="w-full p-5 bg-slate-900/50 rounded-2xl mb-4 border border-slate-800 outline-none focus:border-blue-500 transition-all text-lg" />
-                    <select id="g" className="w-full p-5 bg-slate-900/50 rounded-2xl mb-12 border border-slate-800 outline-none appearance-none text-slate-400">
+                    <p className="text-slate-500 mb-10 text-sm font-medium">대원 정보를 입력하세요.</p>
+                    <input id="n" placeholder="성함" className="w-full p-5 bg-slate-900 rounded-2xl mb-4 border border-slate-800 outline-none focus:border-blue-500 text-lg" />
+                    <select id="g" className="w-full p-5 bg-slate-900 rounded-2xl mb-12 border border-slate-800 outline-none appearance-none text-slate-400">
                         <option value="미착용">안경 미착용</option>
                         <option value="안경">안경+선글라스</option>
                         <option value="도수클립">도수 클립 사용</option>
@@ -113,7 +112,7 @@
                         const u = { name: name, glasses: document.getElementById('g').value };
                         localStorage.setItem('irisis_user', JSON.stringify(u));
                         setUser(u); setView('intro');
-                    }} className="bg-blue-600 p-5 rounded-2xl font-black text-xl shadow-2xl shadow-blue-900/20 active:scale-95 transition-transform">JOIN EXPEDITION</button>
+                    }} className="bg-blue-600 p-5 rounded-2xl font-black text-xl shadow-2xl active:scale-95 transition-transform">JOIN TEAM</button>
                 </div>
             );
 
@@ -127,7 +126,7 @@
                     </p>
                     <div className="space-y-4">
                         <button onClick={() => setView('guide')} className="w-full bg-white text-black p-5 rounded-2xl font-black text-lg">가이드 보기</button>
-                        <button onClick={() => setView('form')} className="w-full bg-slate-900 p-5 rounded-2xl font-black text-lg text-slate-400">건너뛰기</button>
+                        <button onClick={() => setView('form')} className="w-full bg-slate-900 p-5 rounded-2xl font-black text-lg text-slate-400">테스트 시작</button>
                     </div>
                 </div>
             );
@@ -137,42 +136,46 @@
                     <h2 className="text-3xl font-black text-blue-500 mb-10 tracking-tighter italic">GUIDE</h2>
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-white font-black text-lg mb-2">01. 시야 증강</h3>
-                            <p className="text-xs leading-relaxed text-slate-500">빛은 차단되나 시야는 환하게 보이는지 체크하세요. [cite: 41]</p>
+                            <h3 className="text-white font-black text-lg mb-2">01. 시야 증강 (Brightness)</h3>
+                            <p className="text-xs leading-relaxed text-slate-500">빛은 차단되나 시야는 특수 기술로 인해 더 환하고 또렷하게 보이는지 확인하세요[cite: 40, 41].</p>
                         </div>
                         <div>
-                            <h3 className="text-white font-black text-lg mb-2">02. 그늘 시인성</h3>
-                            <p className="text-xs leading-relaxed text-slate-500">빙하 그늘에서 선글라스를 벗지 않아도 잘 보이는지 확인하세요. [cite: 63]</p>
+                            <h3 className="text-white font-black text-lg mb-2">02. 그늘 시인성 (Shadow)</h3>
+                            <p className="text-xs leading-relaxed text-slate-500">흐린 날이나 빙하 그늘에서도 선글라스를 벗지 않고 지형 식별이 가능한지 기록하세요[cite: 63].</p>
                         </div>
                         <div>
-                            <h3 className="text-white font-black text-lg mb-2">03. 대비감도</h3>
-                            <p className="text-xs leading-relaxed text-slate-500">눈밭의 미세한 굴곡과 크레바스가 선명한지 확인하세요. [cite: 63]</p>
+                            <h3 className="text-white font-black text-lg mb-2">03. 대비감도 (Contrast)</h3>
+                            <p className="text-xs leading-relaxed text-slate-500">눈밭의 미세한 굴곡과 크레바스 경계가 선명하게 보이는지 체크하세요.</p>
                         </div>
                     </div>
-                    <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl shadow-blue-900/40">START TEST</button>
+                    <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl">START TEST</button>
                 </div>
             );
 
             return (
                 <div className="p-6 text-slate-200 pb-40 min-h-screen bg-[#020617] no-scrollbar overflow-y-auto">
                     <header className="flex justify-between items-center mb-10">
-                        <span className="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase italic">Irisis Lab</span>
+                        <span className="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase italic italic">Expedition Log</span>
                         <button onClick={() => setView('guide')} className="text-[10px] font-bold text-slate-600 border-b border-slate-800 pb-1">VIEW GUIDE</button>
                     </header>
 
-                    {/* 모델 선택 (3열 균등 분할) */}
+                    {/* 모델 선택 (3열 균등 분할 + 이미지 꽉 차게 + 검정색 모델명) */}
                     <div className="mb-12">
                         <label className="text-[10px] font-black text-slate-600 uppercase mb-4 block tracking-widest">Select Model</label>
                         <div className="grid grid-cols-3 gap-2">
                             {config.models.map((m, idx) => (
                                 <button key={m} onClick={() => setBase({...base, model: m})} 
-                                    className={`p-3 py-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${
-                                        base.model === m ? 'border-blue-500 bg-blue-500/5' : 'border-slate-800 bg-slate-900/30 opacity-40'
+                                    className={`rounded-2xl border transition-all flex flex-col items-center overflow-hidden ${
+                                        base.model === m ? 'border-blue-500 bg-white' : 'border-slate-800 bg-slate-900/30 opacity-60'
                                     }`}>
-                                    <div className="h-10 w-full flex items-center justify-center">
-                                        {config.modelImages[idx] && <img src={config.modelImages[idx]} className="max-h-full object-contain filter drop-shadow-2xl" />}
+                                    <div className="w-full aspect-square flex items-center justify-center bg-slate-800">
+                                        {config.modelImages[idx] && <img src={config.modelImages[idx]} className="w-full h-full object-cover" />}
                                     </div>
-                                    <span className="text-[8px] font-black tracking-tighter truncate w-full">{m}</span>
+                                    <span className={`text-[9px] font-black tracking-tighter truncate w-full px-1 py-3 text-center ${
+                                        base.model === m ? 'text-black' : 'text-slate-500'
+                                    }`}>
+                                        {m}
+                                    </span>
                                 </button>
                             ))}
                         </div>
@@ -200,7 +203,7 @@
                             <div className="absolute top-0 right-0 p-3">
                                 {segments.length > 1 && <button onClick={() => setSegments(segments.filter(i => i.id !== s.id))} className="text-red-900 text-[10px] font-black uppercase">Del</button>}
                             </div>
-                            <span className="text-[9px] font-black text-slate-700 tracking-widest uppercase block mb-6">Environment {idx+1}</span>
+                            <span className="text-[9px] font-black text-slate-700 tracking-widest uppercase block mb-6 italic">Env {idx+1}</span>
                             
                             <div className="grid grid-cols-2 gap-3 mb-10">
                                 <div className="space-y-1">
@@ -218,8 +221,8 @@
                             </div>
 
                             <RatingSystem value={s.contrast} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, contrast: v} : i))} label="대비감도" desc="눈밭의 굴곡과 크레바스 경계가 선명한가?" />
-                            <RatingSystem value={s.shadow} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, shadow: v} : i))} label="그늘 시인성" desc="빙하 그림자 속에서 선글라스를 벗지 않아도 잘 보이는가?" />
-                            <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="시야 밝기" desc="빛은 확실히 차단되면서 전체적으로 환하게 보이는가?" />
+                            <RatingSystem value={s.shadow} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, shadow: v} : i))} label="그늘 시인성" desc="그림자 속에서도 지형이 환하게 잘 보이는가?" />
+                            <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="시야 밝기" desc="빛은 차단되면서 전체적으로 환하게 보이는가?" />
 
                             <textarea 
                                 placeholder="특이사항 한 줄 평 (선택)" 
@@ -230,7 +233,7 @@
                     ))}
                     
                     <button onClick={() => setSegments([...segments, { id: Date.now(), terrain: config.terrains[0], weather: config.weathers[0], contrast: 3, shadow: 3, brightness: 3, comment: '' }])} 
-                        className="w-full bg-slate-900/30 border border-slate-800/50 py-5 rounded-3xl text-slate-500 text-[10px] font-black tracking-widest uppercase mb-12 active:bg-slate-900 transition-colors">
+                        className="w-full bg-slate-900/30 border border-slate-800/50 py-5 rounded-3xl text-slate-500 text-[10px] font-black tracking-widest uppercase mb-12 active:bg-slate-900">
                         + Add Environment
                     </button>
                     

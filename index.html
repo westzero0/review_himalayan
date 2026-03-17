@@ -20,7 +20,7 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const GAS_URL = "https://script.google.com/macros/s/AKfycby6zxTR51JT_JhAaknj5pctldH-k-9D-4Gm4O2QBOp1gnCeoj3i02qsUUSH53HR-Iak/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwev72efGCnnUHT9PaJILdAZ8a3F0bibiitt0EcoCc9PmQS4QMOSudP65Y1WctBGTe9/exec";
 
         function App() {
             const [view, setView] = useState('loading');
@@ -28,8 +28,10 @@
             const [config, setConfig] = useState(null);
             const [pending, setPending] = useState([]);
             const [base, setBase] = useState({ model: '', lensColor: '' });
+            
+            // 평가 항목 5개로 세분화
             const [segments, setSegments] = useState([
-                { id: Date.now(), terrain: '눈밭', weather: '맑음', contrast: 3, shadow: 3, brightness: 3, comment: '' }
+                { id: Date.now(), terrain: '눈밭', weather: '맑음', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }
             ]);
 
             useEffect(() => {
@@ -74,23 +76,22 @@
             };
 
             const RatingSystem = ({ value, onChange, label, desc }) => (
-                <div className="mb-8">
-                    <div className="flex justify-between items-end mb-3 px-1">
+                <div className="mb-6">
+                    <div className="flex justify-between items-end mb-2 px-1">
                         <span className="text-xs font-bold text-slate-200">{label}</span>
                         <span className="text-[10px] text-blue-500 font-black">{value} / 5</span>
                     </div>
-                    <div className="flex gap-1.5 h-2.5">
+                    <div className="flex gap-1.5 h-2">
                         {[1, 2, 3, 4, 5].map(v => (
                             <div 
-                                key={v} 
-                                onClick={() => onChange(v)}
+                                key={v} onClick={() => onChange(v)}
                                 className={`flex-1 rounded-full rating-bar cursor-pointer ${
                                     value >= v ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-slate-800'
                                 }`}
                             />
                         ))}
                     </div>
-                    <p className="text-[9px] text-slate-600 mt-2 px-1 italic">{desc}</p>
+                    <p className="text-[9px] text-slate-500 mt-1.5 px-1 leading-tight">{desc}</p>
                 </div>
             );
 
@@ -120,12 +121,12 @@
                 <div className="p-10 text-white text-center min-h-screen flex flex-col justify-center bg-[#020617]">
                     <h1 className="text-5xl font-black mb-2 tracking-tighter italic text-blue-500">IRISIS</h1>
                     <h2 className="text-xl font-bold mb-10 tracking-[0.2em] text-slate-500 uppercase">Field Test 2026</h2>
-                    <p className="text-slate-400 text-sm mb-16 leading-relaxed font-medium px-4">
-                        산악인 선배 이리지스 대표님의 시야 증강 기술을<br/>
-                        삿피크 현장에서 직접 기록합니다.
+                    <p className="text-slate-400 text-sm mb-16 leading-relaxed font-medium px-2">
+                        빛의 3원색을 제어하는 시야 증강 기술을<br/>
+                        삿피크의 극한 환경에서 검증합니다.
                     </p>
                     <div className="space-y-4">
-                        <button onClick={() => setView('guide')} className="w-full bg-white text-black p-5 rounded-2xl font-black text-lg">가이드 보기</button>
+                        <button onClick={() => setView('guide')} className="w-full bg-white text-black p-5 rounded-2xl font-black text-lg">기술 설명 및 가이드</button>
                         <button onClick={() => setView('form')} className="w-full bg-slate-900 p-5 rounded-2xl font-black text-lg text-slate-400">테스트 시작</button>
                     </div>
                 </div>
@@ -133,19 +134,30 @@
 
             if (view === 'guide') return (
                 <div className="p-8 text-slate-300 min-h-screen bg-[#020617] pb-32">
-                    <h2 className="text-3xl font-black text-blue-500 mb-10 tracking-tighter italic">GUIDE</h2>
-                    <div className="space-y-8">
+                    <h2 className="text-3xl font-black text-blue-500 mb-8 tracking-tighter italic">TECH & GUIDE</h2>
+                    
+                    <div className="mb-8 p-5 bg-blue-950/30 border border-blue-900/50 rounded-2xl">
+                        <h3 className="text-blue-400 font-bold mb-3 text-sm">💡 시야 증강 기술이란?</h3>
+                        <p className="text-[10px] leading-relaxed text-slate-400 mb-3">
+                            일반 선글라스처럼 단순히 빛을 덮어 시야를 어둡게 만드는 것이 아닙니다. 빗속의 빨강, 파랑, 노랑 빛을 눈으로 골고루 들어오게 제어하여, 눈부심은 막고 전체적인 시야는 환하고 또렷하게 만드는 이리지스의 독자 기술입니다.
+                        </p>
+                        <p className="text-[10px] leading-relaxed text-slate-400">
+                            * 주의: 이 기술은 <span className="text-white font-bold">빨강, 파랑, 핑크 등 유색 렌즈</span>에서 진가를 발휘하며, 까만색/은색 렌즈에는 적용되지 않습니다.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6">
                         <div>
-                            <h3 className="text-white font-black text-lg mb-2">01. 시야 증강 (Brightness)</h3>
-                            <p className="text-xs leading-relaxed text-slate-500">빛은 차단되나 시야는 특수 기술로 인해 더 환하고 또렷하게 보이는지 확인하세요[cite: 40, 41].</p>
+                            <h3 className="text-white font-black text-sm mb-1">01. 렌즈와 지형의 궁합</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">특정 렌즈 색상이 눈밭, 암릉, 흙길 중 어디서 가장 선명한지 비교해 주세요.</p>
                         </div>
                         <div>
-                            <h3 className="text-white font-black text-lg mb-2">02. 그늘 시인성 (Shadow)</h3>
-                            <p className="text-xs leading-relaxed text-slate-500">흐린 날이나 빙하 그늘에서도 선글라스를 벗지 않고 지형 식별이 가능한지 기록하세요[cite: 63].</p>
+                            <h3 className="text-white font-black text-sm mb-1">02. 음영 지역 적응력</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">강한 햇빛에서 빙하 그늘이나 텐트 안으로 들어갈 때 시야 확보가 즉각적인지 확인하세요.</p>
                         </div>
                         <div>
-                            <h3 className="text-white font-black text-lg mb-2">03. 대비감도 (Contrast)</h3>
-                            <p className="text-xs leading-relaxed text-slate-500">눈밭의 미세한 굴곡과 크레바스 경계가 선명하게 보이는지 체크하세요.</p>
+                            <h3 className="text-white font-black text-sm mb-1">03. 미세 지형 식별</h3>
+                            <p className="text-[10px] leading-relaxed text-slate-500">눈밭의 굴곡이나 크레바스 경계가 평면적이지 않고 입체적으로 보이는지 체크하세요.</p>
                         </div>
                     </div>
                     <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl">START TEST</button>
@@ -155,12 +167,11 @@
             return (
                 <div className="p-6 text-slate-200 pb-40 min-h-screen bg-[#020617] no-scrollbar overflow-y-auto">
                     <header className="flex justify-between items-center mb-10">
-                        <span className="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase italic italic">Expedition Log</span>
-                        <button onClick={() => setView('guide')} className="text-[10px] font-bold text-slate-600 border-b border-slate-800 pb-1">VIEW GUIDE</button>
+                        <span className="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase italic">Expedition Log</span>
+                        <button onClick={() => setView('guide')} className="text-[10px] font-bold text-slate-600 border-b border-slate-800 pb-1">TECH GUIDE</button>
                     </header>
 
-                    {/* 모델 선택 (3열 균등 분할 + 이미지 꽉 차게 + 검정색 모델명) */}
-                    <div className="mb-12">
+                    <div className="mb-10">
                         <label className="text-[10px] font-black text-slate-600 uppercase mb-4 block tracking-widest">Select Model</label>
                         <div className="grid grid-cols-3 gap-2">
                             {config.models.map((m, idx) => (
@@ -173,17 +184,14 @@
                                     </div>
                                     <span className={`text-[9px] font-black tracking-tighter truncate w-full px-1 py-3 text-center ${
                                         base.model === m ? 'text-black' : 'text-slate-500'
-                                    }`}>
-                                        {m}
-                                    </span>
+                                    }`}>{m}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* 렌즈 선택 (가로 배열 스크롤) */}
-                    <div className="mb-12">
-                        <label className="text-[10px] font-black text-slate-600 uppercase mb-4 block tracking-widest">Lens Color</label>
+                    <div className="mb-10">
+                        <label className="text-[10px] font-black text-slate-600 uppercase mb-4 block tracking-widest">Lens Color (시야증강 컬러)</label>
                         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                             {config.lensColors.map((c, idx) => (
                                 <button key={c} onClick={() => setBase({...base, lensColor: c})} 
@@ -197,15 +205,14 @@
                         </div>
                     </div>
 
-                    {/* 환경별 세그먼트 */}
                     {segments.map((s, idx) => (
-                        <div key={s.id} className="glass-card p-6 rounded-3xl mb-6 relative overflow-hidden">
+                        <div key={s.id} className="glass-card p-5 rounded-3xl mb-6 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-3">
                                 {segments.length > 1 && <button onClick={() => setSegments(segments.filter(i => i.id !== s.id))} className="text-red-900 text-[10px] font-black uppercase">Del</button>}
                             </div>
-                            <span className="text-[9px] font-black text-slate-700 tracking-widest uppercase block mb-6 italic">Env {idx+1}</span>
+                            <span className="text-[9px] font-black text-slate-700 tracking-widest uppercase block mb-6 italic">Record {idx+1}</span>
                             
-                            <div className="grid grid-cols-2 gap-3 mb-10">
+                            <div className="grid grid-cols-2 gap-3 mb-8">
                                 <div className="space-y-1">
                                     <span className="text-[8px] font-bold text-slate-600 ml-1 uppercase">Terrain</span>
                                     <select value={s.terrain} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, terrain: e.target.value} : i))} className="w-full bg-slate-950 p-4 rounded-2xl text-[11px] font-black border border-slate-800 outline-none appearance-none">
@@ -220,19 +227,21 @@
                                 </div>
                             </div>
 
-                            <RatingSystem value={s.contrast} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, contrast: v} : i))} label="대비감도" desc="눈밭의 굴곡과 크레바스 경계가 선명한가?" />
-                            <RatingSystem value={s.shadow} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, shadow: v} : i))} label="그늘 시인성" desc="그림자 속에서도 지형이 환하게 잘 보이는가?" />
-                            <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="시야 밝기" desc="빛은 차단되면서 전체적으로 환하게 보이는가?" />
+                            <RatingSystem value={s.colorMatch} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, colorMatch: v} : i))} label="지형/색상 매칭도" desc="현재 착용한 렌즈 컬러가 지금의 지형을 보기에 적합한가?" />
+                            <RatingSystem value={s.shadow} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, shadow: v} : i))} label="음영 적응력" desc="그늘이나 어두운 곳 진입 시 시야 확보가 즉각적인가?" />
+                            <RatingSystem value={s.contrast} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, contrast: v} : i))} label="입체감 및 대비" desc="바닥의 굴곡과 크레바스가 평면적이지 않고 뚜렷한가?" />
+                            <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="시야 증강 체감" desc="눈부심은 막아주면서 시야는 맑고 환하게 유지되는가?" />
+                            <RatingSystem value={s.comfort} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, comfort: v} : i))} label="눈 보호 및 착용감" desc="눈 피로도, 눈부심, 김서림, 눌림 없이 편안한가?" />
 
                             <textarea 
-                                placeholder="특이사항 한 줄 평 (선택)" 
-                                className="w-full bg-slate-950/50 p-5 rounded-2xl text-[11px] border border-slate-900 outline-none h-24 placeholder:text-slate-800 font-medium"
+                                placeholder="타 브랜드(오클리/줄보 등) 대비 장단점 (선택)" 
+                                className="w-full bg-slate-950/50 p-5 rounded-2xl text-[11px] border border-slate-900 outline-none h-20 placeholder:text-slate-700 font-medium"
                                 onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))}
                             />
                         </div>
                     ))}
                     
-                    <button onClick={() => setSegments([...segments, { id: Date.now(), terrain: config.terrains[0], weather: config.weathers[0], contrast: 3, shadow: 3, brightness: 3, comment: '' }])} 
+                    <button onClick={() => setSegments([...segments, { id: Date.now(), terrain: config.terrains[0], weather: config.weathers[0], colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }])} 
                         className="w-full bg-slate-900/30 border border-slate-800/50 py-5 rounded-3xl text-slate-500 text-[10px] font-black tracking-widest uppercase mb-12 active:bg-slate-900">
                         + Add Environment
                     </button>

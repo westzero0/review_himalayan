@@ -1,0 +1,159 @@
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck } from 'lucide-react';
+
+const GAS_URL = "https://script.google.com/macros/s/AKfycbylUH_inw6JTfynzGR-cm9pFKvTPpXF6Yymv7M5tybouRoTHpPLE4qDpNBHRyEx03UF/exec";
+
+export default function IrisisReviewApp() {
+  const [user, setUser] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // 기본 선택값 상태
+  const [formData, setFormData] = useState({
+    model: '', lensColor: '', altitude: '', weather: '', terrain: '',
+    contrast: 3, shadow: 3, brightness: 3, comfort: 3, comment: ''
+  });
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('irisis_user');
+    if (savedUser) setUser(JSON.parse(savedUser));
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch(GAS_URL);
+      const data = await res.json();
+      setReviews(data.reviews);
+      setConfig(data.config);
+      
+      // 불러온 설정의 첫 번째 값을 기본값으로 세팅
+      if(data.config.models.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          model: data.config.models[0],
+          lensColor: data.config.lensColors[0],
+          altitude: data.config.altitudes[0],
+          weather: data.config.weathers[0],
+          terrain: data.config.terrains[0]
+        }));
+      }
+    } catch (e) { console.error("데이터 로딩 실패"); }
+    setLoading(false);
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ ...user, ...formData })
+      });
+      alert("데이터가 시트에 안전하게 저장되었습니다.");
+      setFormData({ ...formData, comment: '' }); // 코멘트만 초기화
+      fetchData();
+    } catch (e) { alert("저장 실패. 통신 상태를 확인하세요."); }
+    setLoading(false);
+  };
+
+  if (loading && !config) return <div className="p-6 text-white">데이터 동기화 중...</div>;
+
+  if (!user) {
+    // 이전과 동일한 가입 폼 (이름, 안경 여부 등)
+    return ( /* 이전 답변의 프로필 등록 코드와 동일 */ );
+  }
+
+  // 재사용 가능한 버튼 그룹 컴포넌트 (UI 통일성)
+  const ButtonGroup = ({ label, options, stateKey }) => (
+    <div className="mb-5">
+      <label className="block text-sm font-semibold mb-2 text-slate-300">{label}</label>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button key={opt} onClick={() => setFormData({...formData, [stateKey]: opt})}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+              formData[stateKey] === opt ? 'bg-blue-600 text-white font-bold' : 'bg-slate-800 text-slate-400 border border-slate-700'
+            }`}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 pb-20 font-sans">
+      <header className="mb-6 border-b border-slate-800 pb-4">
+        <h1 className="text-xl font-bold text-blue-400">IRISIS Field Test</h1>
+        <p className="text-sm text-slate-500">{user.name} 대원 ({user.glasses})</p>
+      </header>
+
+      {/* 동적 옵션 선택 영역 */}
+      <div className="bg-slate-900 rounded-2xl p-5 mb-8">
+        <ButtonGroup label="착용 모델" options={config.models} stateKey="model" />
+        <ButtonGroup label="렌즈 컬러 (시야증강 확인용)" options={config.lensColors} stateKey="lensColor" />
+        <hr className="border-slate-800 my-4" />
+        <ButtonGroup label="현재 지형" options={config.terrains} stateKey="terrain" />
+        <ButtonGroup label="날씨 및 광량" options={config.weathers} stateKey="weather" />
+        <ButtonGroup label="현재 고도" options={config.altitudes} stateKey="altitude" />
+
+        <hr className="border-slate-800 my-6" />
+
+        {/* 이리지스 특화 지표 (1~5점) */}
+        <div className="space-y-6">
+          {[
+            { key: 'contrast', label: '설면/바닥 대비감도', desc: '굴곡, 크레바스 경계가 뚜렷한가?' },
+            { key: 'shadow', label: '음영/그늘 시인성', desc: '빙하 그림자 등 어두운 곳에서 잘 보이는가?' },
+            { key: 'brightness', label: '시야 밝기 및 색감', desc: '빛은 차단되면서 전체적으로 환한가?' },
+            { key: 'comfort', label: '착용 편의 및 방풍', desc: '김서림, 헬멧 간섭, 눌림이 없는가?' }
+          ].map(q => (
+            <div key={q.key}>
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-sm font-semibold">{q.label}</span>
+                <span className="text-[10px] text-slate-500">{q.desc}</span>
+              </div>
+              <div className="flex gap-1">
+                {[1,2,3,4,5].map(s => (
+                  <button key={s} onClick={() => setFormData({...formData, [q.key]: s})}
+                    className={`flex-1 py-3 rounded-md font-bold text-lg ${formData[q.key] >= s ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-600'}`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <textarea 
+          value={formData.comment} onChange={e => setFormData({...formData, comment: e.target.value})}
+          placeholder="특이사항 한 줄 평 (타사 렌즈와의 비교 등)"
+          className="w-full mt-6 bg-slate-800 border-none rounded-xl p-4 text-sm focus:ring-1 focus:ring-blue-500"
+        />
+
+        <button onClick={handleSubmit} disabled={loading}
+          className="w-full mt-4 bg-blue-600 active:bg-blue-700 py-4 rounded-xl font-bold shadow-lg">
+          {loading ? "기록 중..." : "후기 저장 (구글 시트 전송)"}
+        </button>
+      </div>
+
+      {/* 대원 간 피드백 공유 뷰 */}
+      <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+        <ShieldCheck size={16} /> 원정대 실시간 피드백
+      </h2>
+      <div className="space-y-3">
+        {reviews.map((r, i) => (
+          <div key={i} className="bg-slate-900 p-4 rounded-xl border border-slate-800 text-sm">
+            <div className="flex justify-between font-bold text-blue-400 mb-1">
+              <span>{r.name} 대원</span>
+              <span className="text-slate-500 text-xs">{r.altitude}</span>
+            </div>
+            <div className="text-slate-300 mb-2">
+              [{r.model}] {r.lensColor} / {r.weather} / {r.terrain}
+            </div>
+            {r.comment && <div className="text-slate-400 italic">"{r.comment}"</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IRISIS x SAT PEAK 2026 필드 테스트</title>
+    <title>IRISIS x SAT PEAK 2026</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@0.321.0/font/lucide.min.css">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        body { background-color: #020617; touch-action: manipulation; }
+        body { background-color: #020617; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .rating-bar { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-card { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
 <body>
@@ -22,24 +23,13 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycby6zxTR51JT_JhAaknj5pctldH-k-9D-4Gm4O2QBOp1gnCeoj3i02qsUUSH53HR-Iak/exec";
 
         function App() {
-            const [view, setView] = useState('loading'); // loading, profile, intro, guide, form
+            const [view, setView] = useState('loading');
             const [user, setUser] = useState(null);
-            const [config, setConfig] = useState({
-                models: [],
-                modelImages: [],
-                lensColors: [],
-                lensHexColors: [],
-                altitudes: [],
-                weathers: [],
-                terrains: []
-            });
-            const [reviews, setReviews] = useState([]);
+            const [config, setConfig] = useState(null);
             const [pending, setPending] = useState([]);
-            
-            // 폼 상태
             const [base, setBase] = useState({ model: '', lensColor: '' });
             const [segments, setSegments] = useState([
-                { id: 1, altitude: '', weather: '', terrain: '', contrast: 3, shadow: 3, brightness: 3, comfort: 3, comment: '' }
+                { id: Date.now(), terrain: '눈밭', weather: '맑음', contrast: 3, shadow: 3, brightness: 3, comment: '' }
             ]);
 
             useEffect(() => {
@@ -55,20 +45,17 @@
                     const res = await fetch(GAS_URL);
                     const data = await res.json();
                     setConfig(data.config);
-                    setReviews(data.reviews);
                     setBase({ model: data.config.models[0], lensColor: data.config.lensColors[0] });
                     setView(localStorage.getItem('irisis_user') ? 'intro' : 'profile');
-                } catch (e) {
-                    setView('profile');
-                }
+                } catch (e) { setView('profile'); }
             };
 
             const handleSave = async () => {
-                const newEntries = segments.map(s => ({ ...user, ...base, ...s }));
+                const newEntries = segments.map(s => ({ ...user, ...base, ...s, timestamp: new Date().toISOString() }));
                 const updatedPending = [...pending, ...newEntries];
                 setPending(updatedPending);
                 localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
-                alert("기기에 임시 저장되었습니다. 통신 연결 시 자동 전송됩니다.");
+                alert("기록이 로컬에 저장되었습니다. 통신 연결 시 자동 전송됩니다.");
                 sync(updatedPending);
             };
 
@@ -82,107 +69,174 @@
                             setPending([...current]);
                             localStorage.setItem('irisis_pending', JSON.stringify(current));
                         }
-                    } catch (e) {
-                        break;
-                    }
+                    } catch (e) { break; }
                 }
             };
 
-            if (view === 'loading') return <div className="text-white p-10 text-center">데이터 동기화 중...</div>;
+            // 평점 컴포넌트 (세련된 바 스타일)
+            const RatingSystem = ({ value, onChange, label, desc }) => (
+                <div className="mb-8">
+                    <div className="flex justify-between items-end mb-3 px-1">
+                        <span className="text-xs font-bold text-slate-200">{label}</span>
+                        <span className="text-[10px] text-blue-500 font-black">{value} / 5</span>
+                    </div>
+                    <div className="flex gap-1.5 h-2">
+                        {[1, 2, 3, 4, 5].map(v => (
+                            <div 
+                                key={v} 
+                                onClick={() => onChange(v)}
+                                className={`flex-1 rounded-full rating-bar cursor-pointer ${
+                                    value >= v ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-slate-800'
+                                }`}
+                            />
+                        ))}
+                    </div>
+                    <p className="text-[9px] text-slate-600 mt-2 px-1 italic">{desc}</p>
+                </div>
+            );
+
+            if (view === 'loading') return <div className="text-white p-20 text-center animate-pulse tracking-tighter font-black">SYNCING DATA...</div>;
 
             if (view === 'profile') return (
-                <div className="p-6 text-white min-h-screen flex flex-col justify-center">
-                    <h1 className="text-2xl font-bold text-blue-400 mb-6">대원 등록</h1>
-                    <input id="n" placeholder="이름" className="w-full p-4 bg-slate-900 rounded-xl mb-4 border border-slate-800" />
-                    <select id="g" className="w-full p-4 bg-slate-900 rounded-xl mb-6 border border-slate-800">
+                <div className="p-8 text-white min-h-screen flex flex-col justify-center bg-[#020617]">
+                    <h1 className="text-4xl font-black text-blue-500 mb-2 tracking-tighter italic">REGISTRATION</h1>
+                    <p className="text-slate-500 mb-10 text-sm font-medium">대원님의 정보를 입력해주세요.</p>
+                    <input id="n" placeholder="이름" className="w-full p-5 bg-slate-900/50 rounded-2xl mb-4 border border-slate-800 outline-none focus:border-blue-500 transition-all text-lg" />
+                    <select id="g" className="w-full p-5 bg-slate-900/50 rounded-2xl mb-12 border border-slate-800 outline-none appearance-none text-slate-400">
                         <option value="미착용">안경 미착용</option>
                         <option value="안경">안경+선글라스</option>
-                        <option value="도수클립">도수 클립</option>
+                        <option value="도수클립">도수 클립 사용</option>
                     </select>
                     <button onClick={() => {
-                        const u = { name: document.getElementById('n').value, glasses: document.getElementById('g').value };
+                        const name = document.getElementById('n').value;
+                        if(!name) return;
+                        const u = { name: name, glasses: document.getElementById('g').value };
                         localStorage.setItem('irisis_user', JSON.stringify(u));
                         setUser(u); setView('intro');
-                    }} className="bg-blue-600 p-4 rounded-xl font-bold">시작하기</button>
+                    }} className="bg-blue-600 p-5 rounded-2xl font-black text-xl shadow-2xl shadow-blue-900/20 active:scale-95 transition-transform">JOIN EXPEDITION</button>
                 </div>
             );
 
             if (view === 'intro') return (
-                <div className="p-8 text-white text-center min-h-screen flex flex-col justify-center">
-                    <div className="text-6xl mb-6">🏔️</div>
-                    <h1 className="text-2xl font-bold mb-4 text-blue-400">IRISIS 필드 테스트</h1>
-                    <p className="text-slate-400 text-sm mb-10 leading-relaxed">
-                        산악인 선배 이리지스 대표님의 기술을<br/>삿피크 현장에서 직접 검증합니다.
+                <div className="p-10 text-white text-center min-h-screen flex flex-col justify-center bg-[#020617]">
+                    <h1 className="text-5xl font-black mb-2 tracking-tighter italic text-blue-500">IRISIS</h1>
+                    <h2 className="text-xl font-bold mb-10 tracking-[0.2em] text-slate-500 uppercase">Field Test 2026</h2>
+                    <p className="text-slate-400 text-sm mb-16 leading-relaxed font-medium px-4">
+                        산악인 선배 이리지스 대표님의 시야 증강 기술을<br/>
+                        삿피크 현장에서 직접 기록합니다.
                     </p>
-                    <button onClick={() => setView('guide')} className="bg-blue-600 p-4 rounded-xl font-bold mb-4">테스트 가이드 확인</button>
-                    <button onClick={() => setView('form')} className="bg-slate-800 p-4 rounded-xl font-bold">후기 작성하기</button>
+                    <div className="space-y-4">
+                        <button onClick={() => setView('guide')} className="w-full bg-white text-black p-5 rounded-2xl font-black text-lg">가이드 보기</button>
+                        <button onClick={() => setView('form')} className="w-full bg-slate-900 p-5 rounded-2xl font-black text-lg text-slate-400">건너뛰기</button>
+                    </div>
                 </div>
             );
 
             if (view === 'guide') return (
-                <div className="p-6 text-slate-300 min-h-screen">
-                    <h2 className="text-xl font-bold text-blue-400 mb-6 underline decoration-blue-500 flex items-center gap-2"><BookOpen /> 테스트 가이드</h2>
-                    <ul className="space-y-4 text-sm">
-                        <li className="bg-slate-900 p-4 rounded-xl"><b className="text-white">시야 증강:</b> 빛은 차단되나 시야는 밝고 뚜렷한지 확인.</li>
-                        <li className="bg-slate-900 p-4 rounded-xl"><b className="text-white">그늘 시인성:</b> 빙하/바위 그늘에서 선글라스를 벗지 않아도 잘 보이는지 확인.</li>
-                        <li className="bg-slate-900 p-4 rounded-xl"><b className="text-white">대비감도:</b> 눈밭의 미세한 굴곡과 크레바스가 잘 보이는지 확인.</li>
-                    </ul>
-                    <button onClick={() => setView('form')} className="mt-10 w-full bg-blue-600 p-4 rounded-xl font-bold text-white">이해했습니다</button>
+                <div className="p-8 text-slate-300 min-h-screen bg-[#020617] pb-32">
+                    <h2 className="text-3xl font-black text-blue-500 mb-10 tracking-tighter italic">GUIDE</h2>
+                    <div className="space-y-8">
+                        <div>
+                            <h3 className="text-white font-black text-lg mb-2">01. 시야 증강</h3>
+                            <p className="text-xs leading-relaxed text-slate-500">빛은 차단되나 시야는 환하게 보이는지 체크하세요. [cite: 41]</p>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-lg mb-2">02. 그늘 시인성</h3>
+                            <p className="text-xs leading-relaxed text-slate-500">빙하 그늘에서 선글라스를 벗지 않아도 잘 보이는지 확인하세요. [cite: 63]</p>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-lg mb-2">03. 대비감도</h3>
+                            <p className="text-xs leading-relaxed text-slate-500">눈밭의 미세한 굴곡과 크레바스가 선명한지 확인하세요. [cite: 63]</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl shadow-blue-900/40">START TEST</button>
                 </div>
             );
 
             return (
-                <div className="p-4 text-slate-200 pb-32 overflow-y-auto h-screen no-scrollbar">
-                    {pending.length > 0 && <div className="bg-orange-600/20 p-2 text-[10px] text-orange-400 text-center mb-4 rounded border border-orange-500/50">미전송 데이터 {pending.length}건 대기 중 (연결 시 자동 전송)</div>}
-                    
-                    <div className="bg-slate-900 p-5 rounded-2xl mb-6 border border-slate-800">
-                        <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">착용 모델 선택</label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                            {config.models.map((m, index) => (
-                                <button key={m} onClick={() => setBase({...base, model: m})} 
-                                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${
-                                        base.model === m ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-slate-800/50'
-                                    }`}>
-                                    <img src={config.modelImages[index]} alt={m} className="h-16 mb-2 object-contain"/>
-                                    <span className={`text-xs ${base.model === m ? 'font-bold' : ''}`}>{m}</span>
-                                </button>
-                            ))}
-                        </div>
+                <div className="p-6 text-slate-200 pb-40 min-h-screen bg-[#020617] no-scrollbar overflow-y-auto">
+                    <header className="flex justify-between items-center mb-10">
+                        <span className="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase italic">Irisis Lab</span>
+                        <button onClick={() => setView('guide')} className="text-[10px] font-bold text-slate-600 border-b border-slate-800 pb-1">VIEW GUIDE</button>
+                    </header>
 
-                        <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">렌즈 컬러 (컬러칩)</label>
-                        <div className="flex flex-wrap gap-2">
-                            {config.lensColors.map((c, index) => (
-                                <button key={c} onClick={() => setBase({...base, lensColor: c})} 
-                                    className={`px-3 py-1.5 rounded-full border text-[11px] shrink-0 flex items-center gap-1.5 ${
-                                        base.lensColor === c ? 'border-white bg-white text-black' : 'border-slate-700 text-slate-500'
+                    {/* 모델 선택 (3열 균등 분할) */}
+                    <div className="mb-12">
+                        <label className="text-[10px] font-black text-slate-600 uppercase mb-4 block tracking-widest">Select Model</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {config.models.map((m, idx) => (
+                                <button key={m} onClick={() => setBase({...base, model: m})} 
+                                    className={`p-3 py-5 rounded-2xl border transition-all flex flex-col items-center gap-3 ${
+                                        base.model === m ? 'border-blue-500 bg-blue-500/5' : 'border-slate-800 bg-slate-900/30 opacity-40'
                                     }`}>
-                                    <span className="w-3.5 h-3.5 rounded-full border border-slate-600" style={{ backgroundColor: config.lensHexColors[index] }}></span>
-                                    {c}
+                                    <div className="h-10 w-full flex items-center justify-center">
+                                        {config.modelImages[idx] && <img src={config.modelImages[idx]} className="max-h-full object-contain filter drop-shadow-2xl" />}
+                                    </div>
+                                    <span className="text-[8px] font-black tracking-tighter truncate w-full">{m}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {segments.map((s, idx) => (
-                        <div key={s.id} className="bg-slate-900 p-4 rounded-2xl mb-4 border border-blue-900/30">
-                            <div className="flex justify-between items-center mb-4 text-[10px] font-bold text-slate-500 uppercase"><span>환경 {idx+1}</span></div>
-                            <div className="grid grid-cols-2 gap-2 mb-4">
-                                <select onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, terrain: e.target.value} : i))} className="bg-slate-800 p-3 rounded-lg text-xs border-none uppercase">{config.terrains.map(t => <option key={t}>{t}</option>)}</select>
-                                <select onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, weather: e.target.value} : i))} className="bg-slate-800 p-3 rounded-lg text-xs border-none uppercase">{config.weathers.map(w => <option key={w}>{w}</option>)}</select>
-                            </div>
-                            {['contrast', 'shadow', 'brightness'].map(key => (
-                                <div key={key} className="mb-4">
-                                    <div className="text-[10px] text-slate-500 mb-1">{key === 'contrast' ? '대비감도' : key === 'shadow' ? '그늘 시인성' : '시야 밝기'}</div>
-                                    <div className="flex gap-1">
-                                        {[1,2,3,4,5].map(v => <button key={v} onClick={() => setSegments(segments.map(i => i.id === s.id ? {...i, [key]: v} : i))} className={`flex-1 py-2 rounded text-sm ${s[key] >= v ? 'bg-blue-600' : 'bg-slate-800 text-slate-600'}`}>{v}</button>)}
-                                    </div>
-                                </div>
+                    {/* 렌즈 선택 (가로 배열 스크롤) */}
+                    <div className="mb-12">
+                        <label className="text-[10px] font-black text-slate-600 uppercase mb-4 block tracking-widest">Lens Color</label>
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                            {config.lensColors.map((c, idx) => (
+                                <button key={c} onClick={() => setBase({...base, lensColor: c})} 
+                                    className={`px-4 py-2.5 rounded-full border flex items-center gap-2 shrink-0 transition-all ${
+                                        base.lensColor === c ? 'bg-white text-black border-white font-black' : 'bg-slate-900 text-slate-500 border-slate-800'
+                                    }`}>
+                                    <span className="w-2.5 h-2.5 rounded-full shadow-inner" style={{backgroundColor: config.lensHexColors[idx] || '#ccc'}}></span>
+                                    <span className="text-[10px] uppercase font-bold tracking-tight">{c}</span>
+                                </button>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* 환경별 세그먼트 */}
+                    {segments.map((s, idx) => (
+                        <div key={s.id} className="glass-card p-6 rounded-3xl mb-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-3">
+                                {segments.length > 1 && <button onClick={() => setSegments(segments.filter(i => i.id !== s.id))} className="text-red-900 text-[10px] font-black uppercase">Del</button>}
+                            </div>
+                            <span className="text-[9px] font-black text-slate-700 tracking-widest uppercase block mb-6">Environment {idx+1}</span>
+                            
+                            <div className="grid grid-cols-2 gap-3 mb-10">
+                                <div className="space-y-1">
+                                    <span className="text-[8px] font-bold text-slate-600 ml-1 uppercase">Terrain</span>
+                                    <select value={s.terrain} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, terrain: e.target.value} : i))} className="w-full bg-slate-950 p-4 rounded-2xl text-[11px] font-black border border-slate-800 outline-none appearance-none">
+                                        {config.terrains.map(t => <option key={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[8px] font-bold text-slate-600 ml-1 uppercase">Weather</span>
+                                    <select value={s.weather} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, weather: e.target.value} : i))} className="w-full bg-slate-950 p-4 rounded-2xl text-[11px] font-black border border-slate-800 outline-none appearance-none">
+                                        {config.weathers.map(w => <option key={w}>{w}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <RatingSystem value={s.contrast} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, contrast: v} : i))} label="대비감도" desc="눈밭의 굴곡과 크레바스 경계가 선명한가?" />
+                            <RatingSystem value={s.shadow} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, shadow: v} : i))} label="그늘 시인성" desc="빙하 그림자 속에서 선글라스를 벗지 않아도 잘 보이는가?" />
+                            <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="시야 밝기" desc="빛은 확실히 차단되면서 전체적으로 환하게 보이는가?" />
+
+                            <textarea 
+                                placeholder="특이사항 한 줄 평 (선택)" 
+                                className="w-full bg-slate-950/50 p-5 rounded-2xl text-[11px] border border-slate-900 outline-none h-24 placeholder:text-slate-800 font-medium"
+                                onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))}
+                            />
                         </div>
                     ))}
                     
-                    <button onClick={() => setSegments([...segments, { id: Date.now(), altitude: '', weather: config.weathers[0], terrain: config.terrains[0], contrast: 3, shadow: 3, brightness: 3, comfort: 3, comment: '' }])} className="w-full border border-dashed border-slate-700 py-4 rounded-xl text-slate-500 text-sm mb-6">+ 다른 환경 추가</button>
-                    <button onClick={handleSave} className="fixed bottom-6 left-6 right-6 bg-blue-600 p-4 rounded-xl font-bold shadow-2xl">후기 저장 및 전송</button>
+                    <button onClick={() => setSegments([...segments, { id: Date.now(), terrain: config.terrains[0], weather: config.weathers[0], contrast: 3, shadow: 3, brightness: 3, comment: '' }])} 
+                        className="w-full bg-slate-900/30 border border-slate-800/50 py-5 rounded-3xl text-slate-500 text-[10px] font-black tracking-widest uppercase mb-12 active:bg-slate-900 transition-colors">
+                        + Add Environment
+                    </button>
+                    
+                    <button onClick={handleSave} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-6 rounded-2xl font-black text-white shadow-2xl shadow-blue-900/50 text-xl italic tracking-tighter active:scale-95 transition-transform">
+                        SUBMIT RECORD
+                    </button>
                 </div>
             );
         }

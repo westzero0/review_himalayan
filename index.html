@@ -139,52 +139,45 @@
                 </div>
             );
 
-            if (view === 'intro') return (
-                <div className="p-10 text-white text-center min-h-screen flex flex-col justify-center bg-[#020617]">
-                    <h1 className="text-5xl font-black mb-2 tracking-tighter italic text-blue-500">IRISIS</h1>
-                    <h2 className="text-xl font-bold mb-10 tracking-[0.2em] text-slate-500 uppercase">Field Test 2026</h2>
-                    <p className="text-slate-400 text-sm mb-16 leading-relaxed font-medium px-2">
-                        빛의 3원색을 제어하는 시야 증강 기술을<br/>
-                        삿피크의 극한 환경에서 검증합니다.
-                    </p>
-                    <div className="space-y-4">
-                        <button onClick={() => setView('guide')} className="w-full bg-white text-black p-5 rounded-2xl font-black text-lg">기술 설명 및 가이드</button>
-                        <button onClick={() => setView('form')} className="w-full bg-slate-900 p-5 rounded-2xl font-black text-lg text-slate-400">테스트 시작</button>
-                    </div>
-                </div>
-            );
+          if (view === 'guide') return (
+    <div className="p-8 text-slate-300 min-h-screen bg-[#020617] pb-32">
+        <h2 className="text-3xl font-black text-blue-500 mb-8 tracking-tighter italic">TECH & GUIDE</h2>
+        
+        <div className="mb-8 p-5 bg-blue-950/30 border border-blue-900/50 rounded-2xl">
+            <h3 className="text-blue-400 font-bold mb-3 text-sm">💡 시야 증강 기술이란?</h3>
+            <p className="text-[10px] leading-relaxed text-slate-400 mb-3">
+                일반 선글라스처럼 단순히 빛을 덮어 시야를 어둡게 만드는 것이 아닙니다. 빛 속의 빨강, 파랑, 노랑 빛을 눈으로 골고루 들어오게 제어하여, 눈부심은 막고 전체적인 시야는 환하고 또렷하게 만드는 이리지스의 독자 기술입니다.
+            </p>
+            <p className="text-[10px] leading-relaxed text-slate-400">
+                * 주의: 이 기술은 <span className="text-white font-bold">빨강, 파랑, 핑크 등 유색 렌즈</span>에서 진가를 발휘하며, 까만색/은색 렌즈에는 적용되지 않습니다.
+            </p>
+        </div>
 
-            if (view === 'guide') return (
-                <div className="p-8 text-slate-300 min-h-screen bg-[#020617] pb-32">
-                    <h2 className="text-3xl font-black text-blue-500 mb-8 tracking-tighter italic">TECH & GUIDE</h2>
-                    
-                    <div className="mb-8 p-5 bg-blue-950/30 border border-blue-900/50 rounded-2xl">
-                        <h3 className="text-blue-400 font-bold mb-3 text-sm">💡 시야 증강 기술이란?</h3>
-                        <p className="text-[10px] leading-relaxed text-slate-400 mb-3">
-                            일반 선글라스처럼 단순히 빛을 덮어 시야를 어둡게 만드는 것이 아닙니다. 빗속의 빨강, 파랑, 노랑 빛을 눈으로 골고루 들어오게 제어하여, 눈부심은 막고 전체적인 시야는 환하고 또렷하게 만드는 이리지스의 독자 기술입니다.
-                        </p>
-                        <p className="text-[10px] leading-relaxed text-slate-400">
-                            * 주의: 이 기술은 <span className="text-white font-bold">빨강, 파랑, 핑크 등 유색 렌즈</span>에서 진가를 발휘하며, 까만색/은색 렌즈에는 적용되지 않습니다.
-                        </p>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="text-white font-black text-sm mb-1">01. 렌즈와 지형의 궁합</h3>
-                            <p className="text-[10px] leading-relaxed text-slate-500">특정 렌즈 색상이 눈밭, 암릉, 흙길 중 어디서 가장 선명한지 비교해 주세요.</p>
-                        </div>
-                        <div>
-                            <h3 className="text-white font-black text-sm mb-1">02. 음영 지역 적응력</h3>
-                            <p className="text-[10px] leading-relaxed text-slate-500">강한 햇빛에서 빙하 그늘이나 텐트 안으로 들어갈 때 시야 확보가 즉각적인지 확인하세요.</p>
-                        </div>
-                        <div>
-                            <h3 className="text-white font-black text-sm mb-1">03. 미세 지형 식별</h3>
-                            <p className="text-[10px] leading-relaxed text-slate-500">눈밭의 굴곡이나 크레바스 경계가 평면적이지 않고 입체적으로 보이는지 체크하세요.</p>
-                        </div>
-                    </div>
-                    <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl">START TEST</button>
-                </div>
-            );
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-white font-black text-sm mb-1">01. 지형/색상 매칭도</h3>
+                <p className="text-[10px] leading-relaxed text-slate-500">현재 착용한 렌즈 컬러가 눈밭, 암릉 등 지금 걷고 있는 지형을 식별하는 데 가장 적합한지 평가합니다.</p>
+            </div>
+            <div>
+                <h3 className="text-white font-black text-sm mb-1">02. 음영 적응력 (Shadow)</h3>
+                <p className="text-[10px] leading-relaxed text-slate-500">강한 햇빛에서 빙하 그림자나 텐트 안으로 들어갈 때, 선글라스를 벗지 않아도 즉각적으로 시야 확보가 되는지 확인합니다.</p>
+            </div>
+            <div>
+                <h3 className="text-white font-black text-sm mb-1">03. 입체감 및 대비 (Contrast)</h3>
+                <p className="text-[10px] leading-relaxed text-slate-500">눈밭의 미세한 굴곡과 크레바스 경계가 평면적이지 않고 입체적이고 선명하게 분간되는지 체크합니다.</p>
+            </div>
+            <div>
+                <h3 className="text-white font-black text-sm mb-1">04. 시야 증강 체감 (Brightness)</h3>
+                <p className="text-[10px] leading-relaxed text-slate-500">고산의 강한 눈부심은 확실히 막아주면서도, 렌즈를 통해 보는 시야 전체가 맑고 환하게 유지되는지 확인합니다.</p>
+            </div>
+            <div>
+                <h3 className="text-white font-black text-sm mb-1">05. 눈 보호 및 착용감 (Comfort)</h3>
+                <p className="text-[10px] leading-relaxed text-slate-500">장시간 착용에도 눈 시림이나 피로도가 없는지, 그리고 김서림이나 헬멧 간섭 없이 편안한지 평가합니다.</p>
+            </div>
+        </div>
+        <button onClick={() => setView('form')} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-2xl">START TEST</button>
+    </div>
+);
 
             return (
                 <div className="p-6 text-slate-200 pb-40 min-h-screen bg-[#020617] no-scrollbar overflow-y-auto">

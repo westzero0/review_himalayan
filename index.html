@@ -300,8 +300,9 @@
                     
                     <button onClick={() => setSegments([...segments, { id: Date.now(), terrain: config.terrains[0], weather: config.weathers[0], colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }])} className="w-full bg-slate-900/30 border border-slate-800/50 py-5 rounded-3xl text-slate-600 text-[11px] font-black tracking-[0.2em] uppercase mb-16 active:bg-slate-900">+ Add Environment</button>
                     
-                    <button onClick={handleSave} className="fixed bottom-10 left-8 right-8 bg-blue-600 p-6 rounded-[24px] font-black text-white shadow-2xl text-xl italic tracking-tighter active:scale-95 transition-transform uppercase">Submit Record</button>
-                </div>
+<button onClick={handleSave} className="w-full bg-blue-600 p-6 rounded-[24px] font-black text-white shadow-2xl text-xl italic tracking-tighter active:scale-95 transition-transform uppercase mb-20">
+    Submit Record
+</button>                </div>
             );
         }
 

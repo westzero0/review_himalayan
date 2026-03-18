@@ -11,7 +11,7 @@
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         body { background-color: #020617; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .rating-bar { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tab-active { background: #2563eb; color: white; font-weight: 900; box-shadow: 0 0 15px rgba(37, 99, 235, 0.4); }
         .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
@@ -20,29 +20,21 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz0KHnjCPPDMi6obrewlhcznhxqZOf47EVVgCg19XKW-dZwpr_4hGbT4KgQjPQj0hQq/exec"; // ⚠️ GAS URL 꼭 다시 넣어주세요
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz0KHnjCPPDMi6obrewlhcznhxqZOf47EVVgCg19XKW-dZwpr_4hGbT4KgQjPQj0hQq/exec";
 
         function App() {
-            // 💡 에러 해결: 모든 useState를 최상단으로 이동 (조건문 내부 선언 금지)
             const [view, setView] = useState('loading');
             const [user, setUser] = useState(null);
             const [config, setConfig] = useState(null);
             const [pending, setPending] = useState([]);
             const [base, setBase] = useState({ model: '', lensColor: '' });
-            
-            const [session, setSession] = useState({
-                date: new Date().toISOString().split('T')[0],
-                title: ''
-            });
-            
-            const [segments, setSegments] = useState([
-                { id: Date.now(), terrain: '눈밭', weather: '맑음', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }
-            ]);
+            const [session, setSession] = useState({ date: new Date().toISOString().split('T')[0], title: '' });
+            const [segments, setSegments] = useState([{ id: Date.now(), terrain: '눈밭', weather: '맑음', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }]);
 
-            // 프로필 화면용 상태값들
+            // 프로필 상태 (기존 설정 복구 및 개선)
             const [gender, setGender] = useState('여성');
-            const [ageGroup, setAgeGroup] = useState('30대');
-            const [visionType, setVisionType] = useState('미착용');
+            const [ageGroup, setAgeGroup] = useState('20대');
+            const [visionType, setVisionType] = useState('안경 미착용');
             const [visionNote, setVisionNote] = useState('');
 
             useEffect(() => {
@@ -64,26 +56,13 @@
             };
 
             const handleSave = async () => {
-                if(!session.title) {
-                    alert("훈련명(예: 8차 훈련)을 입력해주세요.");
-                    return;
-                }
-
-                const newEntries = segments.map(s => ({ 
-                    ...user, 
-                    ...base, 
-                    ...s, 
-                    date: session.date,
-                    title: session.title,
-                    timestamp: new Date().toISOString() 
-                }));
+                if(!session.title) return alert("훈련명(예: 8차 훈련)을 입력해주세요.");
+                const newEntries = segments.map(s => ({ ...user, ...base, ...s, date: session.date, title: session.title, timestamp: new Date().toISOString() }));
                 const updatedPending = [...pending, ...newEntries];
                 setPending(updatedPending);
                 localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
-                
-                alert("✅ 기록이 안전하게 저장되었습니다! (통신 연결 시 자동 전송)");
+                alert("✅ 기록 저장 완료!");
                 sync(updatedPending);
-
                 setSegments([{ id: Date.now(), terrain: config.terrains[0], weather: config.weathers[0], colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }]);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
@@ -102,111 +81,49 @@
                 }
             };
 
-            const RatingSystem = ({ value, onChange, label, desc }) => (
-                <div className="mb-6">
-                    <div className="flex justify-between items-end mb-2 px-1">
-                        <span className="text-xs font-bold text-slate-200">{label}</span>
-                        <span className="text-[10px] text-blue-500 font-black">{value} / 5</span>
-                    </div>
-                    <div className="flex gap-1.5 h-2">
-                        {[1, 2, 3, 4, 5].map(v => (
-                            <div 
-                                key={v} onClick={() => onChange(v)}
-                                className={`flex-1 rounded-full rating-bar cursor-pointer ${
-                                    value >= v ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]' : 'bg-slate-800'
-                                }`}
-                            />
-                        ))}
-                    </div>
-                    <p className="text-[9px] text-slate-500 mt-1.5 px-1 leading-tight">{desc}</p>
-                </div>
-            );
-
             if (view === 'loading') return <div className="text-white p-20 text-center animate-pulse tracking-widest font-black">SYNCING...</div>;
 
-            if (view === 'profile') {
-                return (
-                    <div className="p-8 text-white min-h-screen flex flex-col justify-center bg-[#020617]">
-                        <h1 className="text-4xl font-black text-blue-500 mb-2 tracking-tighter italic">REGISTRATION</h1>
-                        <p className="text-slate-500 mb-8 text-sm font-medium">대원 정보 및 시력 보정 방식을 입력하세요.</p>
-                        
-                        <input id="n" placeholder="성함" className="w-full p-5 bg-slate-900 rounded-2xl mb-4 border border-slate-800 outline-none focus:border-blue-500 text-lg" />
-                        
-                        <div className="flex gap-3 mb-4">
-                            <select 
-                                value={gender}
-                                onChange={(e) => setGender(e.target.value)}
-                                className="w-1/2 p-5 bg-slate-900 rounded-2xl border border-slate-800 outline-none appearance-none text-slate-300 font-bold"
-                            >
-                                <option value="여성">여성</option>
-                                <option value="남성">남성</option>
-                            </select>
-
-                            <select 
-                                value={ageGroup}
-                                onChange={(e) => setAgeGroup(e.target.value)}
-                                className="w-1/2 p-5 bg-slate-900 rounded-2xl border border-slate-800 outline-none appearance-none text-slate-300 font-bold"
-                            >
-                                <option value="20대 이하">20대 이하</option>
-                                <option value="30대">30대</option>
-                                <option value="40대">40대</option>
-                                <option value="50대">50대</option>
-                                <option value="60대 이상">60대 이상</option>
-                            </select>
-                        </div>
-                        
-                        <select 
-                            value={visionType}
-                            onChange={(e) => setVisionType(e.target.value)}
-                            className="w-full p-5 bg-slate-900 rounded-2xl mb-4 border border-slate-800 outline-none appearance-none text-slate-300 font-bold"
-                        >
-                            <option value="미착용">안경 미착용</option>
-                            <option value="도수클립">도수 클립 부착</option>
-                            <option value="소프트렌즈">소프트렌즈</option>
-                            <option value="렌즈교체">통렌즈 교체</option>
-                        </select>
-
-                        <input 
-                            type="text" 
-                            placeholder="시각 특이사항 (예: 난시, 근시, 빛번짐 심함 등)" 
-                            value={visionNote}
-                            onChange={(e) => setVisionNote(e.target.value)}
-                            className="w-full p-5 bg-slate-900 rounded-2xl mb-4 border border-slate-800 outline-none focus:border-blue-500 text-sm placeholder:text-slate-600" 
-                        />
-
-                        <div className="min-h-[90px] mb-8">
-                            {visionType === '미착용' && (
-                                <div className="bg-blue-900/20 text-blue-400 p-4 rounded-xl text-[11px] border border-blue-800/50 leading-relaxed">
-                                    💡 <b>최상의 테스트 조건입니다.</b> 이리지스의 VISION BOOSTER™ 기술을 왜곡 없이 100% 체감할 수 있습니다.
-                                </div>
-                            )}
-                            {visionType === '도수클립' && (
-                                <div className="bg-emerald-900/20 text-emerald-400 p-4 rounded-xl text-[11px] border border-emerald-800/50 leading-relaxed">
-                                    ✔️ <b>안경 착용자의 현실적인 대안입니다.</b> 단, 클립 특유의 렌즈 간 거리로 인한 어지러움이나 김서림은 이리지스 렌즈 자체의 단점이 아님을 감안해 주세요.
-                                </div>
-                            )}
-                            {visionType === '소프트렌즈' && (
-                                <div className="bg-orange-900/20 text-orange-400 p-4 rounded-xl text-[11px] border border-orange-800/50 leading-relaxed">
-                                    ⚠️ <b>고산 등반 시 렌즈 착용은 각막 저산소증 및 렌즈 결빙 위험이 있어 비권장합니다.</b> 안전이 확보된 짧은 시간 외에는 피해주세요.
-                                </div>
-                            )}
-                            {visionType === '렌즈교체' && (
-                                <div className="bg-red-900/20 text-red-400 p-4 rounded-xl text-[11px] border border-red-800/50 leading-relaxed">
-                                    🚫 <b>테스트 불가:</b> 개인 도수에 맞춰 '통렌즈 교체'를 할 경우 시야 증강 기술이 제거되어 필드 테스트의 의미가 상실됩니다. 
-                                </div>
-                            )}
-                        </div>
-
-                        <button onClick={() => {
-                            const name = document.getElementById('n').value;
-                            if(!name) return alert("성함을 입력해주세요.");
-                            const u = { name: name, gender: gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
-                            localStorage.setItem('irisis_user', JSON.stringify(u));
-                            setUser(u); setView('intro');
-                        }} className="bg-blue-600 p-5 rounded-2xl font-black text-xl shadow-2xl active:scale-95 transition-transform mt-auto">JOIN TEAM</button>
+            if (view === 'profile') return (
+                <div className="p-8 text-white min-h-screen flex flex-col justify-center bg-[#020617]">
+                    <h1 className="text-4xl font-black text-blue-500 mb-2 tracking-tighter italic">REGISTRATION</h1>
+                    <p className="text-slate-500 mb-8 text-sm font-medium">대원 정보 및 시력 특이사항을 입력하세요.</p>
+                    
+                    <input id="n" placeholder="성함" className="w-full p-5 bg-slate-900 rounded-2xl mb-6 border border-slate-800 outline-none focus:border-blue-500 text-lg" />
+                    
+                    {/* 성할 탭 버튼 */}
+                    <div className="flex bg-slate-900 rounded-2xl p-1.5 mb-6 border border-slate-800">
+                        {['여성', '남성'].map(g => (
+                            <button key={g} onClick={() => setGender(g)} className={`flex-1 py-3 rounded-xl text-sm transition-all ${gender === g ? 'tab-active' : 'text-slate-500'}`}>{g}</button>
+                        ))}
                     </div>
-                );
-            }
+
+                    {/* 연령대 선택 (20대 포함 수정) */}
+                    <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} className="w-full p-5 bg-slate-900 rounded-2xl mb-6 border border-slate-800 outline-none appearance-none text-slate-300 font-bold">
+                        <option value="20대">20대</option>
+                        <option value="30대">30대</option>
+                        <option value="40대">40대</option>
+                        <option value="50대">50대</option>
+                        <option value="60대 이상">60대 이상</option>
+                    </select>
+                    
+                    {/* 시력 보정 (기존 설정 복구) */}
+                    <select value={visionType} onChange={e => setVisionType(e.target.value)} className="w-full p-5 bg-slate-900 rounded-2xl mb-6 border border-slate-800 outline-none appearance-none text-slate-300 font-bold">
+                        <option value="안경 미착용">안경 미착용</option>
+                        <option value="도수클립">도수 클립 부착</option>
+                        <option value="선글라스+안경">선글라스 + 안경 동시 착용</option>
+                    </select>
+
+                    <input type="text" placeholder="시각 특이사항 (난시, 근시, 빛번짐 등)" value={visionNote} onChange={e => setVisionNote(e.target.value)} className="w-full p-5 bg-slate-900 rounded-2xl mb-8 border border-slate-800 outline-none focus:border-blue-500 text-sm placeholder:text-slate-600" />
+
+                    <button onClick={() => {
+                        const name = document.getElementById('n').value;
+                        if(!name) return alert("성함을 입력해주세요.");
+                        const u = { name: name, gender: gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
+                        localStorage.setItem('irisis_user', JSON.stringify(u));
+                        setUser(u); setView('intro');
+                    }} className="bg-blue-600 p-5 rounded-2xl font-black text-xl shadow-2xl active:scale-95 transition-transform">JOIN TEAM</button>
+                </div>
+            );
 
             if (view === 'intro') return (
                 <div className="p-10 text-white text-center min-h-screen flex flex-col justify-center bg-[#020617]">
@@ -344,7 +261,7 @@
                             <RatingSystem value={s.comfort} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, comfort: v} : i))} label="FORTIS™ & RESILEX™ (착용감)" desc="눈 피로도나 렌즈 김서림, 테의 눌림이나 흘러내림 없이 편안한가?" />
 
                             <textarea 
-                                placeholder="타 브랜드(오클리/줄보 등) 대비 장단점 (선택)" 
+                                placeholder="기타 의견 및 특이사항(선택)" 
                                 className="w-full bg-slate-950/50 p-5 rounded-2xl text-[11px] border border-slate-900 outline-none h-20 placeholder:text-slate-700 font-medium mt-2"
                                 onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))}
                             />

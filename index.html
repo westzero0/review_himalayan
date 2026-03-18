@@ -20,9 +20,10 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const GAS_URL = "여기에_배포한_GAS_URL을_넣으세요";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz0KHnjCPPDMi6obrewlhcznhxqZOf47EVVgCg19XKW-dZwpr_4hGbT4KgQjPQj0hQq/exec"; // ⚠️ GAS URL 꼭 다시 넣어주세요
 
         function App() {
+            // 💡 에러 해결: 모든 useState를 최상단으로 이동 (조건문 내부 선언 금지)
             const [view, setView] = useState('loading');
             const [user, setUser] = useState(null);
             const [config, setConfig] = useState(null);
@@ -37,6 +38,12 @@
             const [segments, setSegments] = useState([
                 { id: Date.now(), terrain: '눈밭', weather: '맑음', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, comment: '' }
             ]);
+
+            // 프로필 화면용 상태값들
+            const [gender, setGender] = useState('여성');
+            const [ageGroup, setAgeGroup] = useState('30대');
+            const [visionType, setVisionType] = useState('미착용');
+            const [visionNote, setVisionNote] = useState('');
 
             useEffect(() => {
                 const savedUser = localStorage.getItem('irisis_user');
@@ -118,11 +125,6 @@
             if (view === 'loading') return <div className="text-white p-20 text-center animate-pulse tracking-widest font-black">SYNCING...</div>;
 
             if (view === 'profile') {
-                const [gender, setGender] = useState('여성');
-                const [ageGroup, setAgeGroup] = useState('30대');
-                const [visionType, setVisionType] = useState('미착용');
-                const [visionNote, setVisionNote] = useState('');
-
                 return (
                     <div className="p-8 text-white min-h-screen flex flex-col justify-center bg-[#020617]">
                         <h1 className="text-4xl font-black text-blue-500 mb-2 tracking-tighter italic">REGISTRATION</h1>

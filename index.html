@@ -31,6 +31,7 @@
             const [view, setView] = useState('loading');
             const [user, setUser] = useState(null);
             const [config, setConfig] = useState(null);
+            const [prevView, setPrevView] = useState('intro'); // 👈 이 줄을 새로 추가하세요.
             const [pending, setPending] = useState([]);
             const [base, setBase] = useState({ model: '', lensColor: '' });
             const [session, setSession] = useState({ date: new Date().toISOString().split('T')[0], title: '' });
@@ -167,22 +168,23 @@
                     <button onClick={() => {
                         const u = { gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
                         localStorage.setItem('irisis_user', JSON.stringify(u)); 
-                        setUser(u); 
-                        setView('intro');
+                      setUser(u); 
+                        // ⭐️ 수정: 등록/수정 완료 시 이전 화면으로 복귀
+                        setView(originalExisted ? prevView : 'intro'); 
                     }} className="w-full bg-blue-600 p-6 rounded-2xl font-black text-white text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform uppercase italic tracking-tighter">
                         {user ? 'Save Profile' : 'Join Expedition'}
                     </button>
 
-                    {/* ⭐️ 수정 포인트: 기존 유저라면 돌아가기(Cancel) 버튼 노출 */}
+                    {/* ⭐️ 수정: 취소 버튼도 prevView를 따르도록 변경 */}
                     {user && (
-                        <button onClick={() => setView('intro')} className="w-full mt-3 bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform uppercase">Cancel</button>
+                        <button onClick={() => setView(prevView)} className="w-full mt-3 bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform uppercase">Cancel</button>
                     )}
                 </div>
             );
-
+            
             if (view === 'intro') return (
                 <div className="p-10 text-slate-900 text-center min-h-screen flex flex-col justify-center items-center bg-slate-50 relative">
-                    {/* ⭐️ 수정 포인트: 프로필 편집 버튼 클릭 시 저장된 데이터를 폼에 명확히 다시 불러옵니다. */}
+                    {/* ⭐️ 수정 포인트: 이전 위치를 'intro'로 명확히 지정 */}
                     <button onClick={() => {
                         const saved = localStorage.getItem('irisis_user');
                         if (saved) {
@@ -192,6 +194,7 @@
                             setVisionType(parsed.glasses || '안경 미착용');
                             setVisionNote(parsed.visionNote === '없음' ? '' : parsed.visionNote);
                         }
+                        setPrevView('intro'); // 👈 'form' 대신 'intro'로 수정
                         setView('profile');
                     }} className="absolute top-10 right-8 text-[11px] font-black text-slate-400 border border-slate-300 px-3 py-1.5 rounded-full uppercase tracking-widest bg-white">Profile Edit</button>
                     
@@ -253,6 +256,7 @@
                                     setVisionType(parsed.glasses || '안경 미착용');
                                     setVisionNote(parsed.visionNote === '없음' ? '' : parsed.visionNote);
                                 }
+                    setPrevView('form'); // 👈 여기 1줄 추가됨
                                 setView('profile');
                             }} className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1.5 rounded-lg uppercase tracking-widest active:scale-95 transition-all">Profile</button>
                             <button onClick={() => setView('guide')} className="text-[12px] font-black text-slate-400 border-b border-slate-300 pb-1 italic">GUIDE</button>

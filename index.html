@@ -94,6 +94,7 @@
                 alert("✅ 기록 저장 완료!");
                 sync(updatedPending);
                 setSegments([{ id: Date.now(), altitude: config?.altitudes?.[0] || '', terrain: config?.terrains?.[0] || '', weather: config?.weathers?.[0] || '', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' }]);
+                setSession({ date: new Date().toISOString().split('T')[0], title: '' });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 

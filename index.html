@@ -268,7 +268,7 @@
                                 </div>
                             </div>
 
-                            <textarea placeholder="피드백 (코받침 잔상 등 구체적으로 적어주세요)" className="w-full bg-slate-50 p-5 rounded-2xl text-[13px] border border-slate-200 outline-none h-32 placeholder:text-slate-400 text-slate-800 font-bold leading-relaxed shadow-inner" onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))} />
+                            <textarea placeholder="[선택]착용 시 느낀점을 자세하게 적어주시면 제품 성능 향상에 도움이 될 수 있습니다." className="w-full bg-slate-50 p-5 rounded-2xl text-[13px] border border-slate-200 outline-none h-32 placeholder:text-slate-400 text-slate-800 font-bold leading-relaxed shadow-inner" onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))} />
                         </div>
                     ))}
                     <button onClick={() => setSegments([...segments, { id: Date.now(), altitude: config?.altitudes?.[0] || '', terrain: config?.terrains?.[0] || '', weather: config?.weathers?.[0] || '', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' }])} className="w-full bg-white border border-slate-200 py-6 rounded-[24px] text-slate-500 text-[12px] font-black tracking-[0.2em] uppercase mb-10 transition-colors active:bg-slate-50 shadow-sm">+ Add New Record</button>

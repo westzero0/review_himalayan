@@ -232,10 +232,28 @@
                             <span className="text-[11px] font-black text-blue-500 tracking-widest uppercase block mb-10 italic">Record {idx+1}</span>
                             
                             {/* ⭐️ 고도 추가 (3열 Grid로 변경) */}
-                            <div className="grid grid-cols-3 gap-3 mb-10">
-                                <div className="space-y-1.5"><span className="text-[10px] font-black text-slate-400 uppercase italic">Altitude</span><select value={s.altitude} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, altitude: e.target.value} : i))} className="w-full bg-slate-50 p-4 rounded-2xl text-[12px] font-bold border border-slate-200 text-slate-800 appearance-none">{config?.altitudes?.map(a => <option key={a}>{a}</option>)}</select></div>
-                                <div className="space-y-1.5"><span className="text-[10px] font-black text-slate-400 uppercase italic">Terrain</span><select value={s.terrain} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, terrain: e.target.value} : i))} className="w-full bg-slate-50 p-4 rounded-2xl text-[12px] font-bold border border-slate-200 text-slate-800 appearance-none">{config?.terrains?.map(t => <option key={t}>{t}</option>)}</select></div>
-                                <div className="space-y-1.5"><span className="text-[10px] font-black text-slate-400 uppercase italic">Weather</span><select value={s.weather} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, weather: e.target.value} : i))} className="w-full bg-slate-50 p-4 rounded-2xl text-[12px] font-bold border border-slate-200 text-slate-800 appearance-none">{config?.weathers?.map(w => <option key={w}>{w}</option>)}</select></div>
+                        {/* ⭐️ 넓어진 환경 선택 영역 (1줄 + 2칸) */}
+                            <div className="space-y-4 mb-10">
+                                <div className="space-y-1.5">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase italic">Altitude</span>
+                                    <select value={s.altitude} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, altitude: e.target.value} : i))} className="w-full bg-slate-50 p-4 rounded-2xl text-[14px] font-black border border-slate-200 text-slate-800 appearance-none shadow-sm">
+                                        {config?.altitudes?.map(a => <option key={a}>{a}</option>)}
+                                    </select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase italic">Terrain</span>
+                                        <select value={s.terrain} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, terrain: e.target.value} : i))} className="w-full bg-slate-50 px-4 py-3.5 rounded-2xl text-[14px] font-black border border-slate-200 text-slate-800 appearance-none shadow-sm">
+                                            {config?.terrains?.map(t => <option key={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase italic">Weather</span>
+                                        <select value={s.weather} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, weather: e.target.value} : i))} className="w-full bg-slate-50 px-4 py-3.5 rounded-2xl text-[14px] font-black border border-slate-200 text-slate-800 appearance-none shadow-sm">
+                                            {config?.weathers?.map(w => <option key={w}>{w}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                             
                             <RatingSystem value={s.colorMatch} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, colorMatch: v} : i))} label="지형 매칭도" desc="현재 지형 식별에 최적의 시야를 제공하는가?" />

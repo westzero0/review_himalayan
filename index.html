@@ -31,7 +31,7 @@
             const [view, setView] = useState('loading');
             const [user, setUser] = useState(null);
             const [config, setConfig] = useState(null);
-            const [prevView, setPrevView] = useState('intro'); // 👈 이 줄을 새로 추가하세요.
+            const [prevView, setPrevView] = useState('intro'); 
             const [pending, setPending] = useState([]);
             const [base, setBase] = useState({ model: '', lensColor: '' });
             const [session, setSession] = useState({ date: new Date().toISOString().split('T')[0], title: '' });
@@ -56,7 +56,6 @@
                 if (savedUser) {
                     const parsedUser = JSON.parse(savedUser);
                     setUser(parsedUser);
-                    // ⭐️ 첫 로드 시에도 초기값 꼬이지 않게 세팅
                     setGender(parsedUser.gender || '여성');
                     setAgeGroup(parsedUser.age || '20대');
                     setVisionType(parsedUser.glasses || '안경 미착용');
@@ -165,17 +164,17 @@
                     
                     <input type="text" placeholder="시각 특이사항 (난시, 근시 등)" value={visionNote} onChange={e => setVisionNote(e.target.value)} className="w-full p-5 bg-white rounded-2xl mb-12 border border-slate-200 outline-none focus:border-blue-500 text-base placeholder:text-slate-400 font-medium shadow-sm" />
                     
+                    {/* ⭐️ 저장 후 prevView(기억된 이전 화면)로 무조건 이동 */}
                     <button onClick={() => {
                         const u = { gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
                         localStorage.setItem('irisis_user', JSON.stringify(u)); 
-                      setUser(u); 
-                        // ⭐️ 수정: 등록/수정 완료 시 이전 화면으로 복귀
-                        setView(originalExisted ? prevView : 'intro'); 
+                        setUser(u); 
+                        setView(prevView); 
                     }} className="w-full bg-blue-600 p-6 rounded-2xl font-black text-white text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform uppercase italic tracking-tighter">
                         {user ? 'Save Profile' : 'Join Expedition'}
                     </button>
 
-                    {/* ⭐️ 수정: 취소 버튼도 prevView를 따르도록 변경 */}
+                    {/* ⭐️ 취소 시 prevView(기억된 이전 화면)로 이동 */}
                     {user && (
                         <button onClick={() => setView(prevView)} className="w-full mt-3 bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform uppercase">Cancel</button>
                     )}
@@ -184,23 +183,34 @@
             
             if (view === 'intro') return (
                 <div className="p-10 text-slate-900 text-center min-h-screen flex flex-col justify-center items-center bg-slate-50 relative">
-                    {/* ⭐️ 수정 포인트: 이전 위치를 'intro'로 명확히 지정 */}
-                    <button onClick={() => {
-                        const saved = localStorage.getItem('irisis_user');
-                        if (saved) {
-                            const parsed = JSON.parse(saved);
-                            setGender(parsed.gender || '여성');
-                            setAgeGroup(parsed.age || '20대');
-                            setVisionType(parsed.glasses || '안경 미착용');
-                            setVisionNote(parsed.visionNote === '없음' ? '' : parsed.visionNote);
-                        }
-                        setPrevView('intro'); // 👈 'form' 대신 'intro'로 수정
-                        setView('profile');
-                    }} className="absolute top-10 right-8 text-[11px] font-black text-slate-400 border border-slate-300 px-3 py-1.5 rounded-full uppercase tracking-widest bg-white">Profile Edit</button>
+                    {/* ⭐️ 메인 화면 상단 프로필 요약 카드 (Edit 인식률 향상) */}
+                    {user && (
+                        <div className="absolute top-8 left-8 right-8 bg-white border border-slate-200 p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                            <div className="text-left">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Expedition Member</span>
+                                <p className="text-[13px] font-bold text-slate-600">{user.age} {user.gender} · {user.glasses}</p>
+                            </div>
+                            <button onClick={() => {
+                                const saved = localStorage.getItem('irisis_user');
+                                if (saved) {
+                                    const parsed = JSON.parse(saved);
+                                    setGender(parsed.gender || '여성');
+                                    setAgeGroup(parsed.age || '20대');
+                                    setVisionType(parsed.glasses || '안경 미착용');
+                                    setVisionNote(parsed.visionNote === '없음' ? '' : parsed.visionNote);
+                                }
+                                setPrevView('intro'); 
+                                setView('profile');
+                            }} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 uppercase">Edit</button>
+                        </div>
+                    )}
                     
-                    {LOGO_URL && LOGO_URL.startsWith('http') ? <img src={LOGO_URL} alt="IRISIS Logo" className="w-40 mb-5 max-h-24 object-contain" /> : <h1 className="text-5xl font-black mb-2 tracking-tighter italic text-blue-600">IRISIS</h1>}
-                    <h2 className="text-xl font-black mb-10 tracking-[0.2em] text-slate-400 uppercase italic">2026 SAT PEAK EXFEDITION Field Test</h2>
-                    <div className="space-y-4 w-full">
+                    <div className="mt-12">
+                        {LOGO_URL && LOGO_URL.startsWith('http') ? <img src={LOGO_URL} alt="IRISIS Logo" className="w-40 mb-5 max-h-24 object-contain mx-auto" /> : <h1 className="text-5xl font-black mb-2 tracking-tighter italic text-blue-600 text-center">IRISIS</h1>}
+                        <h2 className="text-xl font-black mb-10 tracking-[0.2em] text-slate-400 uppercase italic text-center leading-tight">2026 SAT PEAK<br/>EXPEDITION Field Test</h2>
+                    </div>
+
+                    <div className="space-y-4 w-full max-w-sm">
                         <button onClick={() => setView('guide')} className="w-full bg-white text-blue-600 border border-blue-100 p-5 rounded-2xl font-black text-lg shadow-sm uppercase">기술 설명 및 가이드</button>
                         <button onClick={() => setView('form')} className="w-full bg-blue-600 p-5 rounded-2xl font-black text-white text-lg shadow-lg shadow-blue-500/30 uppercase italic">테스트 시작</button>
                     </div>
@@ -209,6 +219,7 @@
 
             if (view === 'guide') return (
                 <div className="p-8 text-slate-900 min-h-screen bg-slate-50 pb-32 no-scrollbar overflow-y-auto">
+                    <button onClick={() => setView('intro')} className="text-[12px] font-black text-slate-400 mb-8 flex items-center gap-2 uppercase tracking-widest"><span className="text-xl">←</span> Home</button>
                     <h2 className="text-3xl font-black text-blue-600 mb-8 tracking-tighter italic uppercase">Tech & Guide</h2>
                     <div className="mb-10 p-6 bg-blue-50 border border-blue-200 rounded-2xl">
                         <h3 className="text-blue-700 font-black mb-4 text-lg italic">💡 VISION BOOSTER™</h3>
@@ -237,15 +248,13 @@
 
             return (
                 <div className="p-6 text-slate-900 pb-20 min-h-screen bg-slate-50 no-scrollbar overflow-y-auto">
-               <header className="flex justify-between items-center mb-10 gap-4 px-2">
-                        {/* 1. 중앙 로고 (좌측 정렬로 자연스럽게 이동됨) */}
+                    <header className="flex justify-between items-center mb-10 gap-4 px-2">
                         {LOGO_URL && LOGO_URL.startsWith('http') ? (
                             <img src={LOGO_URL} alt="IRISIS Logo" className="h-6 object-contain" />
                         ) : (
                             <span className="text-[12px] font-black text-blue-600 tracking-[0.3em] uppercase italic">Expedition Log</span>
                         )}
                         
-                        {/* 2. 우측 메뉴 (프로필 편집 + 가이드) */}
                         <div className="flex items-center gap-3">
                             <button onClick={() => {
                                 const saved = localStorage.getItem('irisis_user');
@@ -256,7 +265,7 @@
                                     setVisionType(parsed.glasses || '안경 미착용');
                                     setVisionNote(parsed.visionNote === '없음' ? '' : parsed.visionNote);
                                 }
-                    setPrevView('form'); // 👈 여기 1줄 추가됨
+                                setPrevView('form'); 
                                 setView('profile');
                             }} className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1.5 rounded-lg uppercase tracking-widest active:scale-95 transition-all">Profile</button>
                             <button onClick={() => setView('guide')} className="text-[12px] font-black text-slate-400 border-b border-slate-300 pb-1 italic">GUIDE</button>

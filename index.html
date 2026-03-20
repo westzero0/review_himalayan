@@ -140,7 +140,7 @@
             if (view === 'profile') return (
                 <div className="p-8 text-slate-900 min-h-screen flex flex-col justify-center bg-slate-50">
                     <h1 className="text-4xl font-black text-blue-600 mb-2 tracking-tighter italic text-center uppercase">Registration</h1>
-                    <p className="text-slate-500 mb-10 text-sm font-bold text-center uppercase tracking-widest italic">익명 대원 프로필</p>
+                    <p className="text-slate-500 mb-10 text-sm font-bold text-center uppercase tracking-widest italic">대원 프로필</p>
                     <div className="flex bg-white rounded-2xl p-1.5 mb-5 border border-slate-200 shadow-sm">
                         {['여성', '남성'].map(g => (
                             <button key={g} onClick={() => setGender(g)} className={`flex-1 py-4 rounded-xl text-sm transition-all ${gender === g ? 'tab-active' : 'text-slate-500 font-bold'}`}>{g}</button>
@@ -151,10 +151,20 @@
                         <select value={visionType} onChange={e => setVisionType(e.target.value)} className="p-5 bg-white rounded-2xl border border-slate-200 outline-none appearance-none text-slate-700 font-bold text-base shadow-sm"><option value="안경 미착용">안경 미착용</option><option value="도수클립">도수클립</option><option value="선글라스+안경">선글라스+안경</option></select>
                     </div>
                     <input type="text" placeholder="시각 특이사항 (난시, 근시 등)" value={visionNote} onChange={e => setVisionNote(e.target.value)} className="w-full p-5 bg-white rounded-2xl mb-12 border border-slate-200 outline-none focus:border-blue-500 text-base placeholder:text-slate-400 font-medium shadow-sm" />
+                   {/* ⭐️ 수정 포인트: 정보 수정 버튼 클릭 시 현재 사용자 데이터로 입력란을 미리 채웁니다 */}
                     <button onClick={() => {
-                        const u = { gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
-                        localStorage.setItem('irisis_user', JSON.stringify(u)); setUser(u); setView('intro');
-                    }} className="bg-blue-600 p-6 rounded-2xl font-black text-white text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform uppercase italic tracking-tighter">Join Expedition</button>
+                        // 1. 현재 저장된 사용자 정보가 있다면 입력 상태값들을 업데이트합니다.
+                        if (user) {
+                            setGender(user.gender); // 성별 탭 버튼 세팅
+                            setAgeGroup(user.age); // 연령대 셀렉트박스 세팅
+                            setVisionType(user.glasses); // 시력 옵션 셀렉트박스 세팅
+                            
+                            // 2. 시각 특이사항이 '없음'으로 저장되었을 경우, 수정할 때는 빈 칸으로 보여줍니다.
+                            setVisionNote(user.visionNote === '없음' ? '' : user.visionNote);
+                        }
+                        // 3. 마지막으로 입력 화면으로 전환합니다.
+                        setView('profile');
+                    }} className="absolute top-10 right-8 text-[11px] font-black text-slate-400 border border-slate-300 px-3 py-1.5 rounded-full uppercase tracking-widest bg-white">Profile Edit</button>
                 </div>
             );
 

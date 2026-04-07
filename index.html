@@ -51,17 +51,23 @@
             const [visionNote, setVisionNote] = useState('');
 
             useEffect(() => {
-                const savedUser = localStorage.getItem('irisis_user');
-                const savedPending = localStorage.getItem('irisis_pending');
+                // 1. 저장된 데이터 가져오기 (키 이름을 하나로 통일: 'expedition_user')
+                const savedUser = localStorage.getItem('expedition_user');
+                
                 if (savedUser) {
-                    const parsedUser = JSON.parse(savedUser);
-                    setUser(parsedUser);
-                    setGender(parsedUser.gender || '여성');
-                    setAgeGroup(parsedUser.age || '20대');
-                    setVisionType(parsedUser.glasses || '안경 미착용');
-                    setVisionNote(parsedUser.visionNote === '없음' ? '' : (parsedUser.visionNote || ''));
+                    try {
+                        const parsed = JSON.parse(savedUser);
+                        setUser(parsed);
+                        
+                        // 중요: 저장된 값을 개별 입력 상태(State)에 즉시 반영
+                        setGender(parsed.gender || '여성');
+                        setAgeGroup(parsed.age || '20대');
+                        setVisionType(parsed.glasses || '안경 미착용');
+                        setVisionNote(parsed.visionNote === '없음' ? '' : (parsed.visionNote || ''));
+                    } catch (e) {
+                        console.error("데이터 파싱 에러", e);
+                    }
                 }
-                if (savedPending) setPending(JSON.parse(savedPending));
                 initData();
             }, []);
 
@@ -81,7 +87,7 @@
                         colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3,
                         perceivedColor: [], colorFeel: [], comment: '' 
                     }]);
-                    setView(localStorage.getItem('irisis_user') ? 'intro' : 'profile');
+                    setView(localStorage.getItem('expedition_user') ? 'intro' : 'profile');
                 } catch (e) { setView('profile'); }
             };
 
@@ -164,11 +170,22 @@
                     
                     <input type="text" placeholder="시각 특이사항 (난시, 근시 등)" value={visionNote} onChange={e => setVisionNote(e.target.value)} className="w-full p-5 bg-white rounded-2xl mb-12 border border-slate-200 outline-none focus:border-blue-500 text-base placeholder:text-slate-400 font-medium shadow-sm" />
                     
-                    {/* ⭐️ 저장 후 prevView(기억된 이전 화면)로 무조건 이동 */}
-                    <button onClick={() => {
-                        const u = { gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
-                        localStorage.setItem('irisis_user', JSON.stringify(u)); 
+                  <button onClick={() => {
+                        // 1. 저장할 객체 생성
+                        const u = { 
+                            gender: gender, 
+                            age: ageGroup, 
+                            glasses: visionType, 
+                            visionNote: visionNote || '없음' 
+                        };
+                        
+                        // 2. 브라우저 영구 저장 (키 이름 통일)
+                        localStorage.setItem('expedition_user', JSON.stringify(u)); 
+                        
+                        // 3. 앱 상태 업데이트
                         setUser(u); 
+                        
+                        // 4. 이전 화면으로 복귀
                         setView(prevView); 
                     }} className="w-full bg-blue-600 p-6 rounded-2xl font-black text-white text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform uppercase italic tracking-tighter">
                         {user ? 'Save Profile' : 'Join Expedition'}
@@ -191,7 +208,7 @@
                                 <p className="text-[13px] font-bold text-slate-600">{user.age} {user.gender} · {user.glasses}</p>
                             </div>
                             <button onClick={() => {
-                                const saved = localStorage.getItem('irisis_user');
+                                const saved = localStorage.getItem('expedition_user');
                                 if (saved) {
                                     const parsed = JSON.parse(saved);
                                     setGender(parsed.gender || '여성');
@@ -257,7 +274,7 @@
                         
                         <div className="flex items-center gap-3">
                             <button onClick={() => {
-                                const saved = localStorage.getItem('irisis_user');
+                                const saved = localStorage.getItem('expedition_user');
                                 if (saved) {
                                     const parsed = JSON.parse(saved);
                                     setGender(parsed.gender || '여성');

@@ -27,8 +27,6 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxdZY2xh52SLRS77rTCA_KHgyeYnd5OzXzrUg348-pvUkZ7LwCeWM_oeAoqDYNBsw4/exec"; 
         const LOGO_URL = "https://raw.githubusercontent.com/westzero0/review_himalayan/main/irizis_logo.png"; 
 
-        
-        // ⭐️ 이미지 URL을 로컬에 저장할 수 있는 텍스트(Base64)로 변환하는 함수
         const fetchAndCacheImage = async (url) => {
             if (!url || !url.startsWith('http')) return url;
             try {
@@ -40,22 +38,18 @@
                     reader.readAsDataURL(blob);
                 });
             } catch (e) {
-                return url; // 오류 시 원래 주소 반환
+                return url; 
             }
         };
 
-        
         function App() {
             const [view, setView] = useState('loading');
             const [user, setUser] = useState(null);
             const [config, setConfig] = useState(null);
-            const [reviews, setReviews] = useState([]); 
             const [prevView, setPrevView] = useState('intro'); 
             const [pending, setPending] = useState([]);
             const [base, setBase] = useState({ model: '', lensColor: '' });
             const [session, setSession] = useState({ date: new Date().toISOString().split('T')[0], title: '' });
-
-            // ⭐️ 로고 이미지를 상태로 관리
             const [cachedLogo, setCachedLogo] = useState(LOGO_URL);
             
             const perceivedColors = ["자연스러움", "붉은 기", "푸른 기", "노란 기", "기타"];
@@ -72,80 +66,94 @@
             const [visionType, setVisionType] = useState('안경 미착용');
             const [visionNote, setVisionNote] = useState('');
 
-           useEffect(() => {
-    // 1. 저장된 데이터 가져오기
-    const savedUser = localStorage.getItem('expedition_user');
-    
-    if (savedUser) {
-        try {
-            const parsed = JSON.parse(savedUser);
-            setUser(parsed);
-            
-            // 저장된 값을 개별 입력 상태(State)에 즉시 반영
-            setGender(parsed.gender || '여성');
-            setAgeGroup(parsed.age || '20대');
-            setVisionType(parsed.glasses || '안경 미착용');
-            setVisionNote(parsed.visionNote === '없음' ? '' : (parsed.visionNote || ''));
-            
-            // ⭐️ 핵심 1: 유저 정보가 있으면 구글 서버 기다리지 말고 즉시 메인(intro)으로!
-            setView('intro'); 
-        } catch (e) {
-            console.error("데이터 파싱 에러", e);
-            setView('profile');
-        }
-    } else {
-        // ⭐️ 핵심 2: 처음 온 사람(유저 정보 없음)도 서버 기다리지 말고 즉시 프로필 창으로!
-        setView('profile');
-    }
+            const sync = async (toSync) => {
+                let current = [...toSync];
+                for (const item of toSync) {
+                    try {
+                        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(item) });
+                        if (res.ok) {
+                            current = current.filter(i => i !== item);
+                            setPending([...current]);
+                            localStorage.setItem('irisis_pending', JSON.stringify(current));
+                        }
+                    } catch (e) { break; }
+                }
+            };
 
-    // 미전송 데이터 복구 로직 (유지)
-    const savedPending = localStorage.getItem('irisis_pending');
-    if (savedPending) setPending(JSON.parse(savedPending));
+            useEffect(() => {
+                const savedUser = localStorage.getItem('expedition_user');
+                if (savedUser) {
+                    try {
+                        const parsed = JSON.parse(savedUser);
+                        setUser(parsed);
+                        setGender(parsed.gender || '여성');
+                        setAgeGroup(parsed.age || '20대');
+                        setVisionType(parsed.glasses || '안경 미착용');
+                        setVisionNote(parsed.visionNote === '없음' ? '' : (parsed.visionNote || ''));
+                        setView('intro'); 
+                    } catch (e) {
+                        setView('profile');
+                    }
+                } else {
+                    setView('profile');
+                }
 
-               // ⭐️ 로컬에 저장해둔 로고 텍스트가 있으면 즉시 꺼내기
                 const savedLogo = localStorage.getItem('expedition_logo');
                 if (savedLogo) setCachedLogo(savedLogo);
                
-    // 배경에서 천천히 데이터 동기화 시작
-    initData();
-}, []);
+                initData();
 
-     const initData = async () => {
-            const savedConfig = localStorage.getItem('expedition_config');
-            if (savedConfig) {
-                setConfig(JSON.parse(savedConfig));
-            }
-
-            try {
-                const res = await fetch(GAS_URL);
-                const data = await res.json();
-                
-                let newConfig = { ...data.config };
-
-                // ⭐️ 로고 이미지 변환 및 로컬 저장
-                const logoBase64 = await fetchAndCacheImage(LOGO_URL);
-                localStorage.setItem('expedition_logo', logoBase64);
-                setCachedLogo(logoBase64);
-
-                // ⭐️ 장비 사진들 변환 및 로컬 저장
-                if (newConfig.modelImages && newConfig.modelImages.length > 0) {
-                    const cachedImages = await Promise.all(
-                        newConfig.modelImages.map(url => fetchAndCacheImage(url))
-                    );
-                    newConfig.modelImages = cachedImages; 
+                const savedPending = localStorage.getItem('irisis_pending');
+                if (savedPending) {
+                    const parsedPending = JSON.parse(savedPending);
+                    setPending(parsedPending);
+                    
+                    if (parsedPending.length > 0 && navigator.onLine) {
+                        sync(parsedPending);
+                    }
                 }
-                
-                setConfig(newConfig);
-                setReviews(data.reviews || []); 
-                localStorage.setItem('expedition_config', JSON.stringify(newConfig));
 
-                if(newConfig.models.length > 0) {
-                    setBase({ model: newConfig.models[0], lensColor: newConfig.lensColors[0] });
+                const handleOnline = () => {
+                    const currentPending = JSON.parse(localStorage.getItem('irisis_pending') || '[]');
+                    if (currentPending.length > 0) {
+                        sync(currentPending);
+                    }
+                };
+                window.addEventListener('online', handleOnline);
+
+                return () => window.removeEventListener('online', handleOnline);
+            }, []);
+
+            const initData = async () => {
+                const savedConfig = localStorage.getItem('expedition_config');
+                if (savedConfig) {
+                    setConfig(JSON.parse(savedConfig));
                 }
-            } catch (e) {
-                console.error("데이터 로드 실패", e);
-            }
-        };
+
+                try {
+                    const res = await fetch(GAS_URL);
+                    const data = await res.json();
+                    let newConfig = { ...data.config };
+
+                    const logoBase64 = await fetchAndCacheImage(LOGO_URL);
+                    localStorage.setItem('expedition_logo', logoBase64);
+                    setCachedLogo(logoBase64);
+
+                    if (newConfig.modelImages && newConfig.modelImages.length > 0) {
+                        const cachedImages = await Promise.all(
+                            newConfig.modelImages.map(url => fetchAndCacheImage(url))
+                        );
+                        newConfig.modelImages = cachedImages; 
+                    }
+                    
+                    setConfig(newConfig);
+                    localStorage.setItem('expedition_config', JSON.stringify(newConfig));
+
+                    if(newConfig.models.length > 0) {
+                        setBase({ model: newConfig.models[0], lensColor: newConfig.lensColors[0] });
+                    }
+                } catch (e) {}
+            };
 
             const handleSave = async () => {
                 if(!session.title) return alert("훈련명(예: 8차 훈련)을 입력해주세요.");
@@ -159,25 +167,16 @@
                 setPending(updatedPending);
                 localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
                 alert("✅ 기록 저장 완료! 멋진 리뷰 감사합니다.");
-                sync(updatedPending);
+                
+                if (navigator.onLine) {
+                    sync(updatedPending);
+                }
+                
                 setSegments([{ id: Date.now(), altitude: config?.altitudes?.[0] || '', terrain: config?.terrains?.[0] || '', weather: config?.weathers?.[0] || '', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' }]);
                 setSession({ date: new Date().toISOString().split('T')[0], title: '' });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-               setView('intro'); 
-            };
-
-            const sync = async (toSync) => {
-                let current = [...toSync];
-                for (const item of toSync) {
-                    try {
-                        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(item) });
-                        if (res.ok) {
-                            current = current.filter(i => i !== item);
-                            setPending([...current]);
-                            localStorage.setItem('irisis_pending', JSON.stringify(current));
-                        }
-                    } catch (e) { break; }
-                }
+                
+                setView('intro'); 
             };
 
             const toggleTag = (sid, field, tag) => {
@@ -242,8 +241,6 @@
                 </div>
             );
 
-          
-            
             if (view === 'intro') return (
                 <div className="p-10 text-slate-900 text-center min-h-screen flex flex-col justify-center items-center bg-slate-50 relative">
                     {user && (
@@ -268,13 +265,11 @@
                     )}
                     
                     <div className="mt-12">
-                        {/* ⭐️ 수정완료: 대문 화면 로컬 저장 로고 사용 */}
                         <img src={cachedLogo} alt="IRISIS Logo" className="w-40 mb-5 max-h-24 object-contain mx-auto" />
                         <h2 className="text-xl font-black mb-10 tracking-[0.2em] text-slate-400 uppercase italic text-center leading-tight">2026 SAT PEAK<br/>EXPEDITION Field Test</h2>
                     </div>
 
                     <div className="space-y-4 w-full max-w-sm">
-                     
                         <button onClick={() => setView('form')} className="w-full bg-blue-600 p-5 rounded-2xl font-black text-white text-lg shadow-lg shadow-blue-500/30 uppercase italic">테스트 시작</button>
                         <button onClick={() => setView('guide')} className="w-full bg-transparent text-slate-400 p-3 font-bold text-sm underline-offset-4 underline uppercase">기술 설명 및 가이드</button>
                     </div>
@@ -313,7 +308,6 @@
             return (
                 <div className="p-6 text-slate-900 pb-20 min-h-screen bg-slate-50 no-scrollbar overflow-y-auto">
                     <header className="flex justify-between items-center mb-10 gap-4 px-2">
-                        {/* ⭐️ 수정완료: 헤더 화면 로컬 저장 로고 사용 */}
                         <img src={cachedLogo} alt="IRISIS Logo" className="h-6 object-contain" />
                         
                         <div className="flex items-center gap-3">
@@ -344,7 +338,6 @@
                             {config?.models.map((m, idx) => (
                                 <button key={m} onClick={() => setBase({...base, model: m})} className={`rounded-2xl border transition-all flex flex-col items-center overflow-hidden bg-white shadow-sm ${base.model === m ? 'border-blue-500 shadow-lg ring-2 ring-blue-100' : 'border-slate-200 opacity-70'}`}>
                                     <div className="w-full aspect-video flex items-center justify-center bg-slate-100 overflow-hidden">
-                                        {/* ⭐️ 수정완료: 장비 이미지 lazy loading 추가 */}
                                         {config.modelImages[idx] && <img src={config.modelImages[idx]} loading="lazy" className="w-full h-full object-contain p-1" />}
                                     </div>
                                     <span className={`text-[10px] font-black tracking-tighter truncate w-full px-1 py-4 text-center ${base.model === m ? 'text-blue-700' : 'text-slate-600'}`}>{m}</span>

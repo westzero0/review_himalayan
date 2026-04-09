@@ -50,46 +50,61 @@
             const [visionType, setVisionType] = useState('안경 미착용');
             const [visionNote, setVisionNote] = useState('');
 
-            useEffect(() => {
-                // 1. 저장된 데이터 가져오기 (키 이름을 하나로 통일: 'expedition_user')
-                const savedUser = localStorage.getItem('expedition_user');
-                
-                if (savedUser) {
-                    try {
-                        const parsed = JSON.parse(savedUser);
-                        setUser(parsed);
-                        
-                        // 중요: 저장된 값을 개별 입력 상태(State)에 즉시 반영
-                        setGender(parsed.gender || '여성');
-                        setAgeGroup(parsed.age || '20대');
-                        setVisionType(parsed.glasses || '안경 미착용');
-                        setVisionNote(parsed.visionNote === '없음' ? '' : (parsed.visionNote || ''));
-                    } catch (e) {
-                        console.error("데이터 파싱 에러", e);
-                    }
-                }
-                initData();
-            }, []);
+           useEffect(() => {
+    // 1. 저장된 데이터 가져오기
+    const savedUser = localStorage.getItem('expedition_user');
+    
+    if (savedUser) {
+        try {
+            const parsed = JSON.parse(savedUser);
+            setUser(parsed);
+            
+            // 저장된 값을 개별 입력 상태(State)에 즉시 반영
+            setGender(parsed.gender || '여성');
+            setAgeGroup(parsed.age || '20대');
+            setVisionType(parsed.glasses || '안경 미착용');
+            setVisionNote(parsed.visionNote === '없음' ? '' : (parsed.visionNote || ''));
+            
+            // ⭐️ 핵심 1: 유저 정보가 있으면 구글 서버 기다리지 말고 즉시 메인(intro)으로!
+            setView('intro'); 
+        } catch (e) {
+            console.error("데이터 파싱 에러", e);
+            setView('profile');
+        }
+    } else {
+        // ⭐️ 핵심 2: 처음 온 사람(유저 정보 없음)도 서버 기다리지 말고 즉시 프로필 창으로!
+        setView('profile');
+    }
 
-            const initData = async () => {
-                try {
-                    const res = await fetch(GAS_URL);
-                    const data = await res.json();
-                    setConfig(data.config);
-                    if(data.config.models.length > 0) {
-                        setBase({ model: data.config.models[0], lensColor: data.config.lensColors[0] });
-                    }
-                    setSegments([{ 
-                        id: Date.now(), 
-                        altitude: data.config.altitudes?.[0] || '', 
-                        terrain: data.config.terrains?.[0] || '', 
-                        weather: data.config.weathers?.[0] || '', 
-                        colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3,
-                        perceivedColor: [], colorFeel: [], comment: '' 
-                    }]);
-                    setView(localStorage.getItem('expedition_user') ? 'intro' : 'profile');
-                } catch (e) { setView('profile'); }
-            };
+    // 미전송 데이터 복구 로직 (유지)
+    const savedPending = localStorage.getItem('irisis_pending');
+    if (savedPending) setPending(JSON.parse(savedPending));
+
+    // 배경에서 천천히 데이터 동기화 시작
+    initData();
+}, []);
+
+          const initData = async () => {
+    const savedConfig = localStorage.getItem('expedition_config');
+    if (savedConfig) {
+        setConfig(JSON.parse(savedConfig));
+    }
+
+    try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
+        
+        setConfig(data.config);
+        setReviews(data.reviews || []); // 피드용 리뷰 데이터 저장
+        localStorage.setItem('expedition_config', JSON.stringify(data.config));
+
+        if(data.config.models.length > 0) {
+            setBase({ model: data.config.models[0], lensColor: data.config.lensColors[0] });
+        }
+    } catch (e) {
+        console.error("데이터 로드 실패", e);
+    }
+};
 
             const handleSave = async () => {
                 if(!session.title) return alert("훈련명(예: 8차 훈련)을 입력해주세요.");

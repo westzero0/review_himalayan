@@ -107,7 +107,6 @@
                 if (savedPending) {
                     const parsedPending = JSON.parse(savedPending);
                     setPending(parsedPending);
-                    
                     if (parsedPending.length > 0 && navigator.onLine) {
                         sync(parsedPending);
                     }
@@ -115,19 +114,18 @@
 
                 const handleOnline = () => {
                     const currentPending = JSON.parse(localStorage.getItem('irisis_pending') || '[]');
-                    if (currentPending.length > 0) {
-                        sync(currentPending);
-                    }
+                    if (currentPending.length > 0) sync(currentPending);
                 };
                 window.addEventListener('online', handleOnline);
-
                 return () => window.removeEventListener('online', handleOnline);
             }, []);
 
             const initData = async () => {
                 const savedConfig = localStorage.getItem('expedition_config');
+                let initialConfig = null;
                 if (savedConfig) {
-                    setConfig(JSON.parse(savedConfig));
+                    initialConfig = JSON.parse(savedConfig);
+                    setConfig(initialConfig);
                 }
 
                 try {
@@ -149,10 +147,28 @@
                     setConfig(newConfig);
                     localStorage.setItem('expedition_config', JSON.stringify(newConfig));
 
+                    // ⭐️ 핵심 수정: 서버 데이터 로드 즉시 빈칸을 첫 번째 값으로 동기화
+                    setSegments(prev => prev.map(s => ({
+                        ...s,
+                        altitude: s.altitude || newConfig.altitudes?.[0] || '',
+                        terrain: s.terrain || newConfig.terrains?.[0] || '',
+                        weather: s.weather || newConfig.weathers?.[0] || ''
+                    })));
+
                     if(newConfig.models.length > 0) {
                         setBase({ model: newConfig.models[0], lensColor: newConfig.lensColors[0] });
                     }
-                } catch (e) {}
+                } catch (e) {
+                    // 서버 실패 시 캐시된 데이터로라도 채움
+                    if(initialConfig) {
+                        setSegments(prev => prev.map(s => ({
+                            ...s,
+                            altitude: s.altitude || initialConfig.altitudes?.[0] || '',
+                            terrain: s.terrain || initialConfig.terrains?.[0] || '',
+                            weather: s.weather || initialConfig.weathers?.[0] || ''
+                        })));
+                    }
+                }
             };
 
             const handleSave = async () => {
@@ -166,16 +182,19 @@
                 const updatedPending = [...pending, ...newEntries];
                 setPending(updatedPending);
                 localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
-                alert("✅ 기록 저장 완료! 멋진 리뷰 감사합니다.");
+                alert("✅ 기록 저장 완료!");
                 
-                if (navigator.onLine) {
-                    sync(updatedPending);
-                }
+                if (navigator.onLine) sync(updatedPending);
                 
-                setSegments([{ id: Date.now(), altitude: config?.altitudes?.[0] || '', terrain: config?.terrains?.[0] || '', weather: config?.weathers?.[0] || '', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' }]);
+                setSegments([{ 
+                    id: Date.now(), 
+                    altitude: config?.altitudes?.[0] || '', 
+                    terrain: config?.terrains?.[0] || '', 
+                    weather: config?.weathers?.[0] || '', 
+                    colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' 
+                }]);
                 setSession({ date: new Date().toISOString().split('T')[0], title: '' });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                
                 setView('intro'); 
             };
 
@@ -207,14 +226,12 @@
             if (view === 'profile') return (
                 <div className="p-8 text-slate-900 min-h-screen flex flex-col justify-center bg-slate-50 overflow-y-auto pb-20">
                     <h1 className="text-4xl font-black text-blue-600 mb-2 tracking-tighter italic text-center uppercase">Registration</h1>
-                    <p className="text-slate-500 mb-10 text-sm font-bold text-center uppercase tracking-widest italic">대원 프로필</p>
-                    
+                    <p className="text-slate-500 mb-10 text-sm font-bold text-center uppercase tracking-widest italic text-center">대원 프로필</p>
                     <div className="flex bg-white rounded-2xl p-1.5 mb-5 border border-slate-200 shadow-sm">
                         {['여성', '남성'].map(g => (
                             <button key={g} onClick={() => setGender(g)} className={`flex-1 py-4 rounded-xl text-sm transition-all ${gender === g ? 'tab-active' : 'text-slate-500 font-bold'}`}>{g}</button>
                         ))}
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-3 mb-5">
                         <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} className="p-5 bg-white rounded-2xl border border-slate-200 outline-none appearance-none text-slate-700 font-bold text-base shadow-sm">
                             <option value="20대">20대</option><option value="30대">30대</option><option value="40대">40대</option><option value="50대">50대</option><option value="60대 이상">60대 이상</option>
@@ -223,21 +240,16 @@
                             <option value="안경 미착용">안경 미착용</option><option value="도수클립">도수클립</option><option value="선글라스+안경">선글라스+안경</option>
                         </select>
                     </div>
-                    
-                    <input type="text" placeholder="시각 특이사항 (난시, 근시 등)" value={visionNote} onChange={e => setVisionNote(e.target.value)} className="w-full p-5 bg-white rounded-2xl mb-12 border border-slate-200 outline-none focus:border-blue-500 text-base placeholder:text-slate-400 font-medium shadow-sm" />
-                    
-                  <button onClick={() => {
-                        const u = { gender: gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
+                    <input type="text" placeholder="시각 특이사항" value={visionNote} onChange={e => setVisionNote(e.target.value)} className="w-full p-5 bg-white rounded-2xl mb-12 border border-slate-200 outline-none focus:border-blue-500 text-base placeholder:text-slate-400 font-medium shadow-sm" />
+                    <button onClick={() => {
+                        const u = { gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
                         localStorage.setItem('expedition_user', JSON.stringify(u)); 
                         setUser(u); 
                         setView(prevView); 
-                    }} className="w-full bg-blue-600 p-6 rounded-2xl font-black text-white text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform uppercase italic tracking-tighter">
+                    }} className="w-full bg-blue-600 p-6 rounded-2xl font-black text-white text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform uppercase italic">
                         {user ? 'Save Profile' : 'Join Expedition'}
                     </button>
-
-                    {user && (
-                        <button onClick={() => setView(prevView)} className="w-full mt-3 bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform uppercase">Cancel</button>
-                    )}
+                    {user && <button onClick={() => setView(prevView)} className="w-full mt-3 bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform uppercase">Cancel</button>}
                 </div>
             );
 
@@ -249,29 +261,16 @@
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Expedition Member</span>
                                 <p className="text-[13px] font-bold text-slate-600">{user.age} {user.gender} · {user.glasses}</p>
                             </div>
-                            <button onClick={() => {
-                                const saved = localStorage.getItem('expedition_user');
-                                if (saved) {
-                                    const parsed = JSON.parse(saved);
-                                    setGender(parsed.gender || '여성');
-                                    setAgeGroup(parsed.age || '20대');
-                                    setVisionType(parsed.glasses || '안경 미착용');
-                                    setVisionNote(parsed.visionNote === '없음' ? '' : parsed.visionNote);
-                                }
-                                setPrevView('intro'); 
-                                setView('profile');
-                            }} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 uppercase">Edit</button>
+                            <button onClick={() => { setPrevView('intro'); setView('profile'); }} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100 uppercase">Edit</button>
                         </div>
                     )}
-                    
                     <div className="mt-12">
-                        <img src={cachedLogo} alt="IRISIS Logo" className="w-40 mb-5 max-h-24 object-contain mx-auto" />
-                        <h2 className="text-xl font-black mb-10 tracking-[0.2em] text-slate-400 uppercase italic text-center leading-tight">2026 SAT PEAK<br/>EXPEDITION Field Test</h2>
+                        <img src={cachedLogo} alt="Logo" className="w-40 mb-5 max-h-24 object-contain mx-auto" />
+                        <h2 className="text-xl font-black mb-10 tracking-[0.2em] text-slate-400 uppercase italic leading-tight">2026 SAT PEAK<br/>EXPEDITION Field Test</h2>
                     </div>
-
                     <div className="space-y-4 w-full max-w-sm">
                         <button onClick={() => setView('form')} className="w-full bg-blue-600 p-5 rounded-2xl font-black text-white text-lg shadow-lg shadow-blue-500/30 uppercase italic">테스트 시작</button>
-                        <button onClick={() => setView('guide')} className="w-full bg-transparent text-slate-400 p-3 font-bold text-sm underline-offset-4 underline uppercase">기술 설명 및 가이드</button>
+                        <button onClick={() => setView('guide')} className="w-full bg-transparent text-slate-400 p-3 font-bold text-sm underline uppercase tracking-tighter">기술 설명 및 가이드</button>
                     </div>
                 </div>
             );
@@ -308,28 +307,16 @@
             return (
                 <div className="p-6 text-slate-900 pb-20 min-h-screen bg-slate-50 no-scrollbar overflow-y-auto">
                     <header className="flex justify-between items-center mb-10 gap-4 px-2">
-                        <img src={cachedLogo} alt="IRISIS Logo" className="h-6 object-contain" />
-                        
+                        <img src={cachedLogo} alt="Logo" className="h-6 object-contain" />
                         <div className="flex items-center gap-3">
-                            <button onClick={() => {
-                                const saved = localStorage.getItem('expedition_user');
-                                if (saved) {
-                                    const parsed = JSON.parse(saved);
-                                    setGender(parsed.gender || '여성');
-                                    setAgeGroup(parsed.age || '20대');
-                                    setVisionType(parsed.glasses || '안경 미착용');
-                                    setVisionNote(parsed.visionNote === '없음' ? '' : parsed.visionNote);
-                                }
-                                setPrevView('form'); 
-                                setView('profile');
-                            }} className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1.5 rounded-lg uppercase tracking-widest active:scale-95 transition-all">Profile</button>
+                            <button onClick={() => { setPrevView('form'); setView('profile'); }} className="text-[10px] font-black text-slate-500 bg-slate-200/50 px-2.5 py-1.5 rounded-lg uppercase tracking-widest active:scale-95 transition-all">Profile</button>
                             <button onClick={() => setView('guide')} className="text-[12px] font-black text-slate-400 border-b border-slate-300 pb-1 italic">GUIDE</button>
                         </div>
                     </header>
 
                     <div className="mb-10 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                         <div className="mb-5"><label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest italic">Date</label><input type="date" value={session.date} onChange={e => setSession({...session, date: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl text-base font-bold border border-slate-200 outline-none text-slate-900" /></div>
-                        <div><label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest italic tracking-tighter">Title</label><input type="text" placeholder="예: 8차 훈련" value={session.title} onChange={e => setSession({...session, title: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl text-base font-bold border border-slate-200 outline-none placeholder:text-slate-400 text-slate-900" /></div>
+                        <div><label className="text-[11px] font-black text-slate-400 uppercase mb-2 block tracking-widest italic tracking-tighter">Title</label><input type="text" placeholder="예: 8차 훈련" value={session.title} onChange={e => setSession({...session, title: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl text-base font-bold border border-slate-200 outline-none text-slate-900" /></div>
                     </div>
 
                     <div className="mb-12">
@@ -340,31 +327,35 @@
                                     <div className="w-full aspect-video flex items-center justify-center bg-slate-100 overflow-hidden">
                                         {config.modelImages[idx] && <img src={config.modelImages[idx]} loading="lazy" className="w-full h-full object-contain p-1" />}
                                     </div>
-                                    <span className={`text-[10px] font-black tracking-tighter truncate w-full px-1 py-4 text-center ${base.model === m ? 'text-blue-700' : 'text-slate-600'}`}>{m}</span>
+                                    <span className={`text-[10px] font-black truncate w-full px-1 py-4 text-center ${base.model === m ? 'text-blue-700 font-black' : 'text-slate-600'}`}>{m}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <div className="mb-12"><label className="text-[11px] font-black text-slate-500 uppercase mb-4 block tracking-widest italic text-center">Lens Color</label><div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 px-1">{config?.lensColors.map((c, idx) => (<button key={c} onClick={() => setBase({...base, lensColor: c})} className={`px-5 py-3.5 rounded-full border flex items-center gap-2 shrink-0 transition-all shadow-sm ${base.lensColor === c ? 'bg-slate-800 text-white border-slate-800 font-black' : 'bg-white text-slate-500 border-slate-200 font-bold'}`}><span className="w-3 h-3 rounded-full border border-black/10 shadow-inner" style={{backgroundColor: config.lensHexColors[idx] || '#ccc'}}></span><span className="text-[12px] uppercase">{c}</span></button>))}</div></div>
+                    <div className="mb-12">
+                        <label className="text-[11px] font-black text-slate-500 uppercase mb-4 block tracking-widest italic text-center">Lens Color</label>
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 px-1">
+                            {config?.lensColors.map((c, idx) => (
+                                <button key={c} onClick={() => setBase({...base, lensColor: c})} className={`px-5 py-3.5 rounded-full border flex items-center gap-2 shrink-0 transition-all shadow-sm ${base.lensColor === c ? 'bg-slate-800 text-white border-slate-800 font-black' : 'bg-white text-slate-500 border-slate-200 font-bold'}`}>
+                                    <span className="w-3 h-3 rounded-full border border-black/10 shadow-inner" style={{backgroundColor: config.lensHexColors[idx] || '#ccc'}}></span>
+                                    <span className="text-[12px] uppercase">{c}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
                     {segments.map((s, idx) => (
                         <div key={s.id} className="glass-card p-6 rounded-[32px] mb-8 relative">
                             <div className="absolute top-0 right-0 p-4">{segments.length > 1 && <button onClick={() => setSegments(segments.filter(i => i.id !== s.id))} className="text-red-500 text-[11px] font-black uppercase tracking-widest">Delete</button>}</div>
-                            <span className="text-[11px] font-black text-blue-500 tracking-widest uppercase block mb-10 italic">Record {idx+1}</span>
+                            <span className="text-[11px] font-black text-blue-500 tracking-widest uppercase block mb-10 italic font-black">Record {idx+1}</span>
                             
                             <div className="mb-10">
                                 <div className="mb-5">
                                     <span className="text-[10px] font-black text-slate-400 uppercase italic mb-2 block">Altitude</span>
                                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
                                         {config?.altitudes?.map((a) => (
-                                            <button 
-                                                key={a} 
-                                                onClick={() => setSegments(segments.map(i => i.id === s.id ? {...i, altitude: a} : i))} 
-                                                className={`px-5 py-3 rounded-xl border shrink-0 transition-all text-[13px] shadow-sm ${s.altitude === a ? 'bg-blue-600 text-white border-blue-600 font-black' : 'bg-white text-slate-500 border-slate-200 font-bold'}`}
-                                            >
-                                                {a}
-                                            </button>
+                                            <button key={a} onClick={() => setSegments(segments.map(i => i.id === s.id ? {...i, altitude: a} : i))} className={`px-5 py-3 rounded-xl border shrink-0 transition-all text-[13px] shadow-sm ${s.altitude === a ? 'bg-blue-600 text-white border-blue-600 font-black' : 'bg-white text-slate-500 border-slate-200 font-bold'}`}>{a}</button>
                                         ))}
                                     </div>
                                 </div>
@@ -373,19 +364,19 @@
                                     <div className="space-y-1.5">
                                         <span className="text-[10px] font-black text-slate-400 uppercase italic">Terrain</span>
                                         <select value={s.terrain} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, terrain: e.target.value} : i))} className="w-full bg-slate-50 px-4 py-3.5 rounded-2xl text-[14px] font-black border border-slate-200 text-slate-800 appearance-none shadow-sm">
-                                            {config?.terrains?.map(t => <option key={t}>{t}</option>)}
+                                            {config?.terrains?.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
                                         <span className="text-[10px] font-black text-slate-400 uppercase italic">Weather</span>
                                         <select value={s.weather} onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, weather: e.target.value} : i))} className="w-full bg-slate-50 px-4 py-3.5 rounded-2xl text-[14px] font-black border border-slate-200 text-slate-800 appearance-none shadow-sm">
-                                            {config?.weathers?.map(w => <option key={w}>{w}</option>)}
+                                            {config?.weathers?.map(w => <option key={w} value={w}>{w}</option>)}
                                         </select>
                                     </div>
                                 </div>
                             </div>
                             
-                            <RatingSystem value={s.colorMatch} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, colorMatch: v} : i))} label="지형 매칭도" desc="현재 지형 식별에 최적의 시야를 제공하는가?" />
+                            <RatingSystem value={s.colorMatch} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, colorMatch: v} : i))} label="지형 매칭도" desc="지형 식별에 최적의 시야를 제공하는가?" />
                             <RatingSystem value={s.shadow} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, shadow: v} : i))} label="음영 적응력" desc="그늘 진입 시 즉각적인 시야 확보가 가능한가?" />
                             <RatingSystem value={s.contrast} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, contrast: v} : i))} label="입체감 (SEO™)" desc="눈밭 굴곡이 입체적으로 뚜렷하게 보이는가?" />
                             <RatingSystem value={s.brightness} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, brightness: v} : i))} label="눈부심 제어" desc="눈부심은 막으면서 시야 전체가 맑게 유지되는가?" />
@@ -394,7 +385,6 @@
                             
                             <div className="mb-10">
                                 <RatingSystem value={s.colorIntensity} onChange={(v) => setSegments(segments.map(i => i.id === s.id ? {...i, colorIntensity: v} : i))} label="색감 농도 만족도" desc="색감이 너무 강해 피로하거나 왜곡되지 않는가?" />
-                                
                                 <div className="space-y-6 mt-4 px-1">
                                     <div>
                                         <label className="text-[12px] font-black text-slate-700 mb-3 block italic">A. 어떤 색이 느껴지나요? (중복)</label>
@@ -414,11 +404,16 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <textarea placeholder="(선택)착용 시 느낀점을 자세하게 적어주시면 제품 성능 향상에 도움이 될 수 있습니다." className="w-full bg-slate-50 p-5 rounded-2xl text-[13px] border border-slate-200 outline-none h-32 placeholder:text-slate-400 text-slate-800 font-bold leading-relaxed shadow-inner" onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))} />
+                            <textarea placeholder="(선택) 착용 시 느낀 점을 자세하게 적어주세요." className="w-full bg-slate-50 p-5 rounded-2xl text-[13px] border border-slate-200 outline-none h-32 placeholder:text-slate-400 text-slate-800 font-bold leading-relaxed shadow-inner" onChange={e => setSegments(segments.map(i => i.id === s.id ? {...i, comment: e.target.value} : i))} />
                         </div>
                     ))}
-                    <button onClick={() => setSegments([...segments, { id: Date.now(), altitude: config?.altitudes?.[0] || '', terrain: config?.terrains?.[0] || '', weather: config?.weathers?.[0] || '', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' }])} className="w-full bg-white border border-slate-200 py-6 rounded-[24px] text-slate-500 text-[12px] font-black tracking-[0.2em] uppercase mb-10 transition-colors active:bg-slate-50 shadow-sm">+ Add New Record</button>
+                    <button onClick={() => setSegments([...segments, { 
+                        id: Date.now(), 
+                        altitude: config?.altitudes?.[0] || '', 
+                        terrain: config?.terrains?.[0] || '', 
+                        weather: config?.weathers?.[0] || '', 
+                        colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' 
+                    }])} className="w-full bg-white border border-slate-200 py-6 rounded-[24px] text-slate-500 text-[12px] font-black tracking-[0.2em] uppercase mb-10 transition-colors active:bg-slate-50 shadow-sm">+ Add New Record</button>
                     <button onClick={handleSave} className="w-full bg-blue-600 p-6 rounded-[24px] font-black text-white shadow-xl shadow-blue-500/30 text-xl italic tracking-tighter active:scale-95 transition-all uppercase mb-20 font-black italic">Submit Record</button>
                 </div>
             );

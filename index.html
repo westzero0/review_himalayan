@@ -27,14 +27,36 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxdZY2xh52SLRS77rTCA_KHgyeYnd5OzXzrUg348-pvUkZ7LwCeWM_oeAoqDYNBsw4/exec"; 
         const LOGO_URL = "https://raw.githubusercontent.com/westzero0/review_himalayan/main/irizis_logo.png"; 
 
+        
+        // ⭐️ 이미지 URL을 로컬에 저장할 수 있는 텍스트(Base64)로 변환하는 함수
+        const fetchAndCacheImage = async (url) => {
+            if (!url || !url.startsWith('http')) return url;
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                return url; // 오류 시 원래 주소 반환
+            }
+        };
+
+        
         function App() {
             const [view, setView] = useState('loading');
             const [user, setUser] = useState(null);
             const [config, setConfig] = useState(null);
+            const [reviews, setReviews] = useState([]); 
             const [prevView, setPrevView] = useState('intro'); 
             const [pending, setPending] = useState([]);
             const [base, setBase] = useState({ model: '', lensColor: '' });
             const [session, setSession] = useState({ date: new Date().toISOString().split('T')[0], title: '' });
+
+            // ⭐️ 로고 이미지를 상태로 관리
+            const [cachedLogo, setCachedLogo] = useState(LOGO_URL);
             
             const perceivedColors = ["자연스러움", "붉은 기", "푸른 기", "노란 기", "기타"];
             const colorFeels = ["농도 적당함", "대비 적당함", "너무 진함/어두움", "색 대비 과함(피로)", "색 대비 약함"];
@@ -80,31 +102,50 @@
     const savedPending = localStorage.getItem('irisis_pending');
     if (savedPending) setPending(JSON.parse(savedPending));
 
+               // ⭐️ 로컬에 저장해둔 로고 텍스트가 있으면 즉시 꺼내기
+                const savedLogo = localStorage.getItem('expedition_logo');
+                if (savedLogo) setCachedLogo(savedLogo);
+               
     // 배경에서 천천히 데이터 동기화 시작
     initData();
 }, []);
 
-          const initData = async () => {
-    const savedConfig = localStorage.getItem('expedition_config');
-    if (savedConfig) {
-        setConfig(JSON.parse(savedConfig));
-    }
+     const initData = async () => {
+            const savedConfig = localStorage.getItem('expedition_config');
+            if (savedConfig) {
+                setConfig(JSON.parse(savedConfig));
+            }
 
-    try {
-        const res = await fetch(GAS_URL);
-        const data = await res.json();
-        
-        setConfig(data.config);
-        setReviews(data.reviews || []); // 피드용 리뷰 데이터 저장
-        localStorage.setItem('expedition_config', JSON.stringify(data.config));
+            try {
+                const res = await fetch(GAS_URL);
+                const data = await res.json();
+                
+                let newConfig = { ...data.config };
 
-        if(data.config.models.length > 0) {
-            setBase({ model: data.config.models[0], lensColor: data.config.lensColors[0] });
-        }
-    } catch (e) {
-        console.error("데이터 로드 실패", e);
-    }
-};
+                // ⭐️ 로고 이미지 변환 및 로컬 저장
+                const logoBase64 = await fetchAndCacheImage(LOGO_URL);
+                localStorage.setItem('expedition_logo', logoBase64);
+                setCachedLogo(logoBase64);
+
+                // ⭐️ 장비 사진들 변환 및 로컬 저장
+                if (newConfig.modelImages && newConfig.modelImages.length > 0) {
+                    const cachedImages = await Promise.all(
+                        newConfig.modelImages.map(url => fetchAndCacheImage(url))
+                    );
+                    newConfig.modelImages = cachedImages; 
+                }
+                
+                setConfig(newConfig);
+                setReviews(data.reviews || []); 
+                localStorage.setItem('expedition_config', JSON.stringify(newConfig));
+
+                if(newConfig.models.length > 0) {
+                    setBase({ model: newConfig.models[0], lensColor: newConfig.lensColors[0] });
+                }
+            } catch (e) {
+                console.error("데이터 로드 실패", e);
+            }
+        };
 
             const handleSave = async () => {
                 if(!session.title) return alert("훈련명(예: 8차 훈련)을 입력해주세요.");
@@ -117,11 +158,12 @@
                 const updatedPending = [...pending, ...newEntries];
                 setPending(updatedPending);
                 localStorage.setItem('irisis_pending', JSON.stringify(updatedPending));
-                alert("✅ 기록 저장 완료!");
+                alert("✅ 기록 저장 완료! 멋진 리뷰 감사합니다.");
                 sync(updatedPending);
                 setSegments([{ id: Date.now(), altitude: config?.altitudes?.[0] || '', terrain: config?.terrains?.[0] || '', weather: config?.weathers?.[0] || '', colorMatch: 3, shadow: 3, contrast: 3, brightness: 3, comfort: 3, fit: 3, colorIntensity: 3, perceivedColor: [], colorFeel: [], comment: '' }]);
                 setSession({ date: new Date().toISOString().split('T')[0], title: '' });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                setView('feed'); 
             };
 
             const sync = async (toSync) => {
@@ -186,36 +228,56 @@
                     <input type="text" placeholder="시각 특이사항 (난시, 근시 등)" value={visionNote} onChange={e => setVisionNote(e.target.value)} className="w-full p-5 bg-white rounded-2xl mb-12 border border-slate-200 outline-none focus:border-blue-500 text-base placeholder:text-slate-400 font-medium shadow-sm" />
                     
                   <button onClick={() => {
-                        // 1. 저장할 객체 생성
-                        const u = { 
-                            gender: gender, 
-                            age: ageGroup, 
-                            glasses: visionType, 
-                            visionNote: visionNote || '없음' 
-                        };
-                        
-                        // 2. 브라우저 영구 저장 (키 이름 통일)
+                        const u = { gender: gender, age: ageGroup, glasses: visionType, visionNote: visionNote || '없음' };
                         localStorage.setItem('expedition_user', JSON.stringify(u)); 
-                        
-                        // 3. 앱 상태 업데이트
                         setUser(u); 
-                        
-                        // 4. 이전 화면으로 복귀
                         setView(prevView); 
                     }} className="w-full bg-blue-600 p-6 rounded-2xl font-black text-white text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-transform uppercase italic tracking-tighter">
                         {user ? 'Save Profile' : 'Join Expedition'}
                     </button>
 
-                    {/* ⭐️ 취소 시 prevView(기억된 이전 화면)로 이동 */}
                     {user && (
                         <button onClick={() => setView(prevView)} className="w-full mt-3 bg-white border border-slate-200 text-slate-500 p-4 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform uppercase">Cancel</button>
                     )}
                 </div>
             );
+
+            if (view === 'feed') return (
+                <div className="p-6 text-slate-900 min-h-screen bg-slate-50 overflow-y-auto pb-32">
+                    <header className="flex justify-between items-center mb-8">
+                        <button onClick={() => setView('intro')} className="text-2xl font-black text-slate-400">←</button>
+                        <h2 className="text-[14px] font-black tracking-widest uppercase italic text-blue-600">Review Feed</h2>
+                        <div className="w-8"></div>
+                    </header>
+
+                    <div className="space-y-4">
+                        {reviews.length === 0 ? (
+                            <div className="text-center text-slate-400 py-10 font-bold text-sm">아직 작성된 리뷰가 없거나 불러오는 중입니다.</div>
+                        ) : (
+                            reviews.map((r, i) => (
+                                <div key={i} className="glass-card p-5 rounded-2xl">
+                                    <div className="flex justify-between items-start mb-3 border-b border-slate-200 pb-3">
+                                        <div>
+                                            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">{r.model}</span>
+                                            <p className="text-[13px] font-bold mt-2 text-slate-700">{r.title}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-bold text-slate-400 block">{new Date(r.date).toLocaleDateString()}</span>
+                                            <span className="text-[11px] font-black text-slate-500 mt-1 block">{r.age} {r.gender}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-[13px] text-slate-700 leading-relaxed font-medium">"{r.comment}"</p>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                    
+                    <button onClick={() => setView('form')} className="fixed bottom-8 left-8 right-8 bg-blue-600 p-5 rounded-2xl font-black text-white shadow-xl text-lg uppercase italic text-center">나도 리뷰 작성하기</button>
+                </div>
+            );
             
             if (view === 'intro') return (
                 <div className="p-10 text-slate-900 text-center min-h-screen flex flex-col justify-center items-center bg-slate-50 relative">
-                    {/* ⭐️ 메인 화면 상단 프로필 요약 카드 (Edit 인식률 향상) */}
                     {user && (
                         <div className="absolute top-8 left-8 right-8 bg-white border border-slate-200 p-4 rounded-2xl flex justify-between items-center shadow-sm">
                             <div className="text-left">
@@ -238,13 +300,15 @@
                     )}
                     
                     <div className="mt-12">
-                        {LOGO_URL && LOGO_URL.startsWith('http') ? <img src={LOGO_URL} alt="IRISIS Logo" className="w-40 mb-5 max-h-24 object-contain mx-auto" /> : <h1 className="text-5xl font-black mb-2 tracking-tighter italic text-blue-600 text-center">IRISIS</h1>}
+                        {/* ⭐️ 수정완료: 대문 화면 로컬 저장 로고 사용 */}
+                        <img src={cachedLogo} alt="IRISIS Logo" className="w-40 mb-5 max-h-24 object-contain mx-auto" />
                         <h2 className="text-xl font-black mb-10 tracking-[0.2em] text-slate-400 uppercase italic text-center leading-tight">2026 SAT PEAK<br/>EXPEDITION Field Test</h2>
                     </div>
 
                     <div className="space-y-4 w-full max-w-sm">
-                        <button onClick={() => setView('guide')} className="w-full bg-white text-blue-600 border border-blue-100 p-5 rounded-2xl font-black text-lg shadow-sm uppercase">기술 설명 및 가이드</button>
+                        <button onClick={() => setView('feed')} className="w-full bg-white text-slate-700 border border-slate-200 p-5 rounded-2xl font-black text-lg shadow-sm">다른 대원 리뷰 보기 👀</button>
                         <button onClick={() => setView('form')} className="w-full bg-blue-600 p-5 rounded-2xl font-black text-white text-lg shadow-lg shadow-blue-500/30 uppercase italic">테스트 시작</button>
+                        <button onClick={() => setView('guide')} className="w-full bg-transparent text-slate-400 p-3 font-bold text-sm underline-offset-4 underline uppercase">기술 설명 및 가이드</button>
                     </div>
                 </div>
             );
@@ -281,11 +345,8 @@
             return (
                 <div className="p-6 text-slate-900 pb-20 min-h-screen bg-slate-50 no-scrollbar overflow-y-auto">
                     <header className="flex justify-between items-center mb-10 gap-4 px-2">
-                        {LOGO_URL && LOGO_URL.startsWith('http') ? (
-                            <img src={LOGO_URL} alt="IRISIS Logo" className="h-6 object-contain" />
-                        ) : (
-                            <span className="text-[12px] font-black text-blue-600 tracking-[0.3em] uppercase italic">Expedition Log</span>
-                        )}
+                        {/* ⭐️ 수정완료: 헤더 화면 로컬 저장 로고 사용 */}
+                        <img src={cachedLogo} alt="IRISIS Logo" className="h-6 object-contain" />
                         
                         <div className="flex items-center gap-3">
                             <button onClick={() => {
@@ -315,7 +376,8 @@
                             {config?.models.map((m, idx) => (
                                 <button key={m} onClick={() => setBase({...base, model: m})} className={`rounded-2xl border transition-all flex flex-col items-center overflow-hidden bg-white shadow-sm ${base.model === m ? 'border-blue-500 shadow-lg ring-2 ring-blue-100' : 'border-slate-200 opacity-70'}`}>
                                     <div className="w-full aspect-video flex items-center justify-center bg-slate-100 overflow-hidden">
-                                        {config.modelImages[idx] && <img src={config.modelImages[idx]} className="w-full h-full object-contain p-1" />}
+                                        {/* ⭐️ 수정완료: 장비 이미지 lazy loading 추가 */}
+                                        {config.modelImages[idx] && <img src={config.modelImages[idx]} loading="lazy" className="w-full h-full object-contain p-1" />}
                                     </div>
                                     <span className={`text-[10px] font-black tracking-tighter truncate w-full px-1 py-4 text-center ${base.model === m ? 'text-blue-700' : 'text-slate-600'}`}>{m}</span>
                                 </button>
